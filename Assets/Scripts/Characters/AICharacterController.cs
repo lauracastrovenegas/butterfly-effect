@@ -7,13 +7,11 @@ using System.Threading.Tasks;
 public class AICharacterController : MonoBehaviour
 {
     [Header("Character Configuration")]
-    [Tooltip("The context that defines this character's personality and responses")]
+    [Tooltip("The context defines this character's personality and responses")]
     public CharacterContext context;
 
     [Header("Optional Debug UI")]
-    [Tooltip("Text to show the current transcription (optional)")]
     public TextMeshProUGUI transcriptionText;
-    [Tooltip("Button to start listening (optional)")]
     public Button startListeningButton;
 
     // Core services
@@ -25,6 +23,14 @@ public class AICharacterController : MonoBehaviour
 
     private void Start()
     {
+        // Validate context
+        if (context == null)
+        {
+            Debug.LogError("No CharacterContext assigned to AICharacterController!");
+            enabled = false;
+            return;
+        }
+
         InitializeServices();
         SetupAudioSource();
         SetupUI();
@@ -32,7 +38,7 @@ public class AICharacterController : MonoBehaviour
 
     private void InitializeServices()
     {
-        // Get or create ServiceManager using new method
+        // Get or create ServiceManager
         serviceManager = Object.FindFirstObjectByType<ServiceManager>();
         if (serviceManager == null)
         {
@@ -40,7 +46,7 @@ public class AICharacterController : MonoBehaviour
             serviceManager = serviceObj.AddComponent<ServiceManager>();
         }
 
-        // Get or create VoiceSDKManager using new method
+        // Get or create VoiceSDKManager
         voiceManager = Object.FindFirstObjectByType<VoiceSDKManager>();
         if (voiceManager == null)
         {
