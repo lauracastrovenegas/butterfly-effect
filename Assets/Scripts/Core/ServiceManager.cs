@@ -84,6 +84,7 @@ public class ServiceManager : MonoBehaviour
         try
         {
             currentContext = context;
+            
             // Get AI response
             string response = await geminiService.GetResponse(userInput);
 
@@ -98,17 +99,22 @@ public class ServiceManager : MonoBehaviour
             // Convert to audio using ElevenLabs
             AudioClip audioClip = await elevenLabsService.GenerateVoice(response);
 
-            // Play through audio manager
-            if (audioClip != null)
+            // Ensure audio clip was created successfully
+            if (audioClip != null && audioClip.length > 0)
             {
+                Debug.Log($"[ServiceManager] Generated audio clip length: {audioClip.length}s");
                 audioManager.PlaySpatialAudio(audioClip, audioSource);
+            }
+            else
+            {
+                Debug.LogError("[ServiceManager] Generated audio clip is invalid");
             }
 
             return audioClip;
         }
         catch (Exception e)
         {
-            Debug.LogError($"Error processing user input: {e.Message}");
+            Debug.LogError($"[ServiceManager] Error processing user input: {e.Message}");
             return null;
         }
     }

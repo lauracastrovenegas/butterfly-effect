@@ -3,11 +3,8 @@ using System.Collections.Generic;
 
 public abstract class CharacterContext : MonoBehaviour
 {
-    public virtual string get_prompt_context(string userInput, Dictionary<string, object> state)
-    {
-        return string.Empty;
-    }
-
+    public abstract string get_prompt_context(string userInput, Dictionary<string, object> state);
+    
     public virtual (string marker, string response) ParseResponse(string fullResponse)
     {
         if (string.IsNullOrEmpty(fullResponse)) return ("NORMAL", fullResponse);

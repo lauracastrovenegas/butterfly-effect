@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -17,7 +18,7 @@ public class AudioManager : MonoBehaviour
 
     private void Start()
     {
-        // No need to set spatializer plugin - we'll use Unity's built-in spatial audio
+        // using Unity's built-in spatial audio
     }
 
     public void PlaySpatialAudio(AudioClip clip, Transform location, float delay = 0f)
@@ -70,21 +71,40 @@ public class AudioManager : MonoBehaviour
         AudioSource newSource = location.gameObject.AddComponent<AudioSource>();
         audioSources[location] = newSource;
         
-        // Configure spatial audio settings
-        newSource.spatialBlend = 1.0f;
-        newSource.spread = 60.0f;
+        // Optimized audio settings
+        newSource.spatialBlend = 0.0f;  // Pure 2D audio
+        newSource.volume = 0.8f;
+        newSource.playOnAwake = false;
+        newSource.loop = false;
+        newSource.spatialize = false;
         newSource.dopplerLevel = 0.0f;
-        newSource.rolloffMode = AudioRolloffMode.Custom;
-        newSource.maxDistance = 10.0f;
-        newSource.minDistance = 1.0f;
+        newSource.priority = 0; // Highest priority
+        newSource.reverbZoneMix = 0f; // No reverb
+        newSource.bypassEffects = true;
+        newSource.bypassListenerEffects = true;
+        newSource.bypassReverbZones = true;
         
         return newSource;
     }
 
     private void PlayAudioOnSource(AudioSource source, AudioClip clip)
     {
-        source.clip = clip;
-        source.Play();
+        if (clip == null || source == null) return;
+
+        try
+        {
+            // Ensure clean playback
+            source.Stop();
+            source.clip = null;
+            source.clip = clip;
+            source.Play();
+
+            Debug.Log($"Playing audio clip: Length={clip.length}s, Channels={clip.channels}, Frequency={clip.frequency}Hz");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error playing audio: {e.Message}");
+        }
     }
 
     public void StopAudio(Transform location)
