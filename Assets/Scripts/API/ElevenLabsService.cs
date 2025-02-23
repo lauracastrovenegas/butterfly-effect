@@ -4,32 +4,42 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Text;
 using Newtonsoft.Json;
+using UnityEngine.Networking;
+using System.IO;
+using System.Net.Http.Headers;
 
 public class ElevenLabsService
 {
     private readonly HttpClient client;
     private readonly string apiKey;
-    private readonly string voiceId = "W71zT1VwIFFx3mMGH2uZ"; // Fixed voice ID
     private readonly VoiceConfig voiceConfig;
     private readonly string baseUrl = "https://api.elevenlabs.io/v1";
 
     public ElevenLabsService(string apiKey, VoiceConfig voiceConfig)
     {
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            throw new ArgumentException("ElevenLabs API key cannot be empty");
+        }
+
         this.apiKey = apiKey;
         this.voiceConfig = voiceConfig;
         
         client = new HttpClient();
         client.DefaultRequestHeaders.Add("xi-api-key", apiKey);
+        client.Timeout = TimeSpan.FromSeconds(30);
     }
 
     public async Task<AudioClip> GenerateVoice(string text)
     {
         try
         {
+            Debug.Log($"[ElevenLabsService] Generating voice for text: {text}");
+
             var requestBody = new
             {
                 text = text,
-                model_id = "eleven_flash_v2_5", // Using Flash model for faster responses
+                model_id = "eleven_flash_v2_5",
                 voice_settings = new
                 {
                     stability = voiceConfig.Stability,
@@ -42,76 +52,47 @@ public class ElevenLabsService
             var json = JsonConvert.SerializeObject(requestBody);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            // Using stream endpoint with maximum latency optimization
-            var response = await client.PostAsync(
-                $"{baseUrl}/text-to-speech/{voiceId}/stream?optimize_streaming_latency=4",
-                content
-            );
+            // Request MP3 output directly
+            client.DefaultRequestHeaders.Accept.Clear();
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("audio/mpeg"));
 
-            if (response.IsSuccessStatusCode)
+            var response = await client.PostAsync($"{baseUrl}/text-to-speech/{voiceConfig.VoiceId}", content);
+            if (!response.IsSuccessStatusCode)
             {
-                byte[] audioData = await response.Content.ReadAsByteArrayAsync();
-                return await ConvertToAudioClip(audioData);
+                var err = await response.Content.ReadAsStringAsync();
+                throw new Exception($"ElevenLabs API error: {response.StatusCode}, Content: {err}");
             }
-            else
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Debug.LogError($"ElevenLabs API error: {response.StatusCode}, Content: {errorContent}");
-                throw new Exception($"ElevenLabs API error: {response.StatusCode}");
-            }
+
+            byte[] audioData = await response.Content.ReadAsByteArrayAsync();
+            Debug.Log($"[ElevenLabsService] Received {audioData.Length} bytes of MP3 data");
+            return await LoadAudioClip(audioData);
         }
         catch (Exception e)
         {
-            Debug.LogError($"Error calling ElevenLabs API: {e.Message}");
-            return null;
+            Debug.LogError($"[ElevenLabsService] Error: {e.Message}\n{e.StackTrace}");
+            throw;
         }
     }
 
-    private async Task<AudioClip> ConvertToAudioClip(byte[] audioData)
+    private async Task<AudioClip> LoadAudioClip(byte[] audioData)
     {
-        return await Task.Run(() =>
+        // Write file out and then load it using UnityWebRequest
+        string tempPath = Path.Combine(Application.temporaryCachePath, "temp_audio.mp3");
+        await File.WriteAllBytesAsync(tempPath, audioData);
+
+        using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + tempPath, AudioType.MPEG))
         {
-            try
+            await www.SendWebRequest();  // Await the operation directly
+            if (www.result != UnityWebRequest.Result.Success)
             {
-                const int sampleRate = 44100;
-                const int channels = 1;
-                
-                AudioClip clip = AudioClip.Create(
-                    "DaVinciVoice",
-                    audioData.Length / 2,
-                    channels,
-                    sampleRate,
-                    false
-                );
-
-                float[] samples = new float[audioData.Length / 2];
-                for (int i = 0; i < samples.Length; i++)
-                {
-                    short sample = BitConverter.ToInt16(audioData, i * 2);
-                    samples[i] = sample / 32768f;
-                }
-
-                clip.SetData(samples, 0);
-                return clip;
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"Error converting audio data: {e.Message}");
+                Debug.LogError($"Failed to load audio: {www.error}");
                 return null;
             }
-        });
-    }
-
-    public async Task<bool> ValidateApiKey()
-    {
-        try
-        {
-            var response = await client.GetAsync($"{baseUrl}/voices");
-            return response.IsSuccessStatusCode;
-        }
-        catch
-        {
-            return false;
+            
+            AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
+            Debug.Log($"[ElevenLabsService] Successfully loaded MP3 clip, Length: {clip.length}s");
+            File.Delete(tempPath);
+            return clip;
         }
     }
 }

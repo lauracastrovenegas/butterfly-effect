@@ -4,26 +4,36 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Text;
-using System.Collections.Generic;  // Add this line
+using System.Collections.Generic;
 
 public class GeminiService
 {
     private readonly HttpClient client;
     private readonly string apiKey;
-    private readonly string baseUrl = "https://generativelanguage.googleapis.com/v1beta2/models/gemini-2.0-flash:generateText";
+    private readonly string baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
     private readonly DaVinciContext context;
 
     public GeminiService(string apiKey)
     {
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            Debug.LogError("[GeminiService] API key is empty!");
+            throw new ArgumentException("Gemini API key cannot be empty");
+        }
+
+        Debug.Log($"[GeminiService] Initializing with API key length: {apiKey.Length}");
         this.apiKey = apiKey;
         client = new HttpClient();
         context = new DaVinciContext();
+        client.Timeout = TimeSpan.FromSeconds(30);
     }
 
     public async Task<string> GetResponse(string userInput)
     {
         try
         {
+            Debug.Log($"[GeminiService] Processing input: {userInput}");
+
             var prompt = context.get_prompt_context(userInput, new Dictionary<string, object>
             {
                 ["is_painting"] = true,
@@ -54,11 +64,18 @@ public class GeminiService
             };
 
             var json = JsonConvert.SerializeObject(requestBody);
+            Debug.Log($"[GeminiService] Request URL: {baseUrl}?key={apiKey.Substring(0, 4)}...");
+            Debug.Log($"[GeminiService] Request body: {json}");
+
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             var url = $"{baseUrl}?key={apiKey}";
 
             var response = await client.PostAsync(url, content);
             var responseContent = await response.Content.ReadAsStringAsync();
+            
+            Debug.Log($"[GeminiService] Response status: {response.StatusCode}");
+            Debug.Log($"[GeminiService] Response headers: {string.Join(", ", response.Headers)}");
+            Debug.Log($"[GeminiService] Response content: {responseContent}");
 
             if (response.IsSuccessStatusCode)
             {
@@ -66,13 +83,13 @@ public class GeminiService
             }
             else
             {
-                Debug.LogError($"Gemini API error: {response.StatusCode}, Content: {responseContent}");
-                throw new Exception($"Gemini API error: {response.StatusCode}");
+                Debug.LogError($"[GeminiService] API error: {response.StatusCode}, Content: {responseContent}");
+                return "Mi dispiace, I am having trouble with my thoughts...";
             }
         }
         catch (Exception e)
         {
-            Debug.LogError($"Error calling Gemini API: {e.Message}");
+            Debug.LogError($"[GeminiService] Error: {e.Message}\nStack trace: {e.StackTrace}");
             return "Mi dispiace, I am momentarily lost in thought...";
         }
     }
@@ -88,18 +105,21 @@ public class GeminiService
                 response.candidates[0].content?.parts != null &&
                 response.candidates[0].content.parts.Length > 0)
             {
-                return response.candidates[0].content.parts[0].text;
+                var result = response.candidates[0].content.parts[0].text;
+                Debug.Log($"[GeminiService] Successfully parsed response: {result}");
+                return result;
             }
 
-            throw new Exception("Invalid response structure");
+            throw new Exception($"Invalid response structure: {responseJson}");
         }
         catch (Exception e)
         {
-            Debug.LogError($"Error parsing Gemini response: {e.Message}");
+            Debug.LogError($"[GeminiService] Error parsing response: {e.Message}");
             return "Mi dispiace, I am having trouble forming my thoughts...";
         }
     }
 
+    // Response classes remain the same
     private class GeminiResponse
     {
         public Candidate[] candidates { get; set; }
