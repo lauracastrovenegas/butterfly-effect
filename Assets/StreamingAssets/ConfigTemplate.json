@@ -1,0 +1,11 @@
+{
+    "ApiKeys": {
+        "Gemini": "YOUR_GEMINI_API_KEY_HERE",
+        "ElevenLabs": "YOUR_ELEVENLABS_API_KEY"
+    },
+    "VoiceConfig": {
+        "VoiceId": "YOUR_VOICE_ID",
+        "Stability": 0.65,
+        "SimilarityBoost": 0.75
+    }
+}
