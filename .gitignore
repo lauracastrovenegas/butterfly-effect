@@ -1,6 +1,6 @@
 #This is for the API keys and other sensitive information
-Assets/StreamingAssets/
-/Assets/StreamingAssets/
+Assets/StreamingAssets/config.json
+
 
 
 

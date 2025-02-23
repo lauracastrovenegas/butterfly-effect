@@ -1,29 +1,36 @@
 using UnityEngine;
+using Meta.Voice;
 using Meta.WitAi;
 using Meta.WitAi.Json;
 using System;
 using System.Threading.Tasks;
 using TMPro;
+using Meta.WitAi.Requests;
+using Oculus.Voice;
 
-[RequireComponent(typeof(AppVoiceExperience))]
 public class VoiceSDKManager : MonoBehaviour
 {
-    private AppVoiceExperience appVoiceExperience;
+    private AppVoiceExperience voiceExperience;
     private bool isListening = false;
     private TaskCompletionSource<string> currentTranscriptionTask;
 
-    public TextMeshProUGUI transcriptionText; // Optional: For debugging/UI
+    public TextMeshProUGUI transcriptionText; // Optional: For debugging
 
-    private void Awake()
+    private void Start()
     {
-        appVoiceExperience = GetComponent<AppVoiceExperience>();
-        
-        // Set up voice experience callbacks
-        appVoiceExperience.events.OnStartListening.AddListener(OnStartedListening);
-        appVoiceExperience.events.OnStoppedListening.AddListener(OnStoppedListening);
-        appVoiceExperience.events.OnFullTranscription.AddListener(OnFullTranscriptionReceived);
-        appVoiceExperience.events.OnPartialTranscription.AddListener(OnPartialTranscriptionReceived);
-        appVoiceExperience.events.OnError.AddListener(OnError);
+        // Get or add AppVoiceExperience
+        voiceExperience = gameObject.GetComponent<AppVoiceExperience>();
+        if (voiceExperience == null)
+        {
+            voiceExperience = gameObject.AddComponent<AppVoiceExperience>();
+        }
+
+        // Setup voice callbacks
+        voiceExperience.VoiceEvents.OnStartListening.AddListener(OnStartedListening);
+        voiceExperience.VoiceEvents.OnStoppedListening.AddListener(OnStoppedListening);
+        voiceExperience.VoiceEvents.OnFullTranscription.AddListener(OnFullTranscriptionReceived);
+        voiceExperience.VoiceEvents.OnPartialTranscription.AddListener(OnPartialTranscriptionReceived);
+        voiceExperience.VoiceEvents.OnError.AddListener(OnError);
     }
 
     public async Task<string> StartListeningAsync()
@@ -36,7 +43,8 @@ public class VoiceSDKManager : MonoBehaviour
 
         currentTranscriptionTask = new TaskCompletionSource<string>();
         isListening = true;
-        appVoiceExperience.Activate();
+
+        voiceExperience.Activate();
 
         return await currentTranscriptionTask.Task;
     }
@@ -45,7 +53,7 @@ public class VoiceSDKManager : MonoBehaviour
     {
         if (!isListening) return;
 
-        appVoiceExperience.Deactivate();
+        voiceExperience.Deactivate();
         isListening = false;
     }
 
@@ -108,13 +116,13 @@ public class VoiceSDKManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (appVoiceExperience != null)
+        if (voiceExperience != null)
         {
-            appVoiceExperience.events.OnStartListening.RemoveListener(OnStartedListening);
-            appVoiceExperience.events.OnStoppedListening.RemoveListener(OnStoppedListening);
-            appVoiceExperience.events.OnFullTranscription.RemoveListener(OnFullTranscriptionReceived);
-            appVoiceExperience.events.OnPartialTranscription.RemoveListener(OnPartialTranscriptionReceived);
-            appVoiceExperience.events.OnError.RemoveListener(OnError);
+            voiceExperience.VoiceEvents.OnStartListening.RemoveListener(OnStartedListening);
+            voiceExperience.VoiceEvents.OnStoppedListening.RemoveListener(OnStoppedListening);
+            voiceExperience.VoiceEvents.OnFullTranscription.RemoveListener(OnFullTranscriptionReceived);
+            voiceExperience.VoiceEvents.OnPartialTranscription.RemoveListener(OnPartialTranscriptionReceived);
+            voiceExperience.VoiceEvents.OnError.RemoveListener(OnError);
         }
     }
 }

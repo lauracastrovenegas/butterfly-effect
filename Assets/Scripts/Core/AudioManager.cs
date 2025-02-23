@@ -17,8 +17,7 @@ public class AudioManager : MonoBehaviour
 
     private void Start()
     {
-        // Ensure Meta XR Audio SDK is being used
-        AudioSettings.SetSpatializerPlugin("Meta XR Audio");
+        // No need to set spatializer plugin - we'll use Unity's built-in spatial audio
     }
 
     public void PlaySpatialAudio(AudioClip clip, Transform location, float delay = 0f)
@@ -72,17 +71,12 @@ public class AudioManager : MonoBehaviour
         audioSources[location] = newSource;
         
         // Configure spatial audio settings
-        newSource.spatialize = true;
         newSource.spatialBlend = 1.0f;
         newSource.spread = 60.0f;
         newSource.dopplerLevel = 0.0f;
         newSource.rolloffMode = AudioRolloffMode.Custom;
         newSource.maxDistance = 10.0f;
         newSource.minDistance = 1.0f;
-        
-        // Enable near-field effects
-        newSource.SetSpatializerFloat(0, 1.0f); // Enable HRTF
-        newSource.SetSpatializerFloat(1, 0.5f); // Set volumetric radius
         
         return newSource;
     }

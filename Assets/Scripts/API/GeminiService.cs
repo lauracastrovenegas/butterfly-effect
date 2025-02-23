@@ -4,12 +4,13 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Text;
+using System.Collections.Generic;  // Add this line
 
 public class GeminiService
 {
     private readonly HttpClient client;
     private readonly string apiKey;
-    private readonly string baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+    private readonly string baseUrl = "https://generativelanguage.googleapis.com/v1beta2/models/gemini-2.0-flash:generateText";
     private readonly DaVinciContext context;
 
     public GeminiService(string apiKey)
@@ -23,7 +24,6 @@ public class GeminiService
     {
         try
         {
-            // Get contextualized prompt - keeping it concise for Flash model
             var prompt = context.get_prompt_context(userInput, new Dictionary<string, object>
             {
                 ["is_painting"] = true,
@@ -46,18 +46,14 @@ public class GeminiService
                 },
                 generationConfig = new
                 {
-                    temperature = 0.9,
+                    temperature = 0.9f,
                     topK = 40,
-                    topP = 0.8,
-                    candidateCount = 1,
-                    maxOutputTokens = 256, // Reduced for Flash model
-                    stopSequences = new[] { "User:", "Visitor:" }
+                    topP = 0.8f,
+                    maxOutputTokens = 256
                 }
             };
 
             var json = JsonConvert.SerializeObject(requestBody);
-            Debug.Log($"Sending request to Gemini Flash: {json}");
-
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             var url = $"{baseUrl}?key={apiKey}";
 
@@ -99,7 +95,7 @@ public class GeminiService
         }
         catch (Exception e)
         {
-            Debug.LogError($"Error parsing Gemini response: {e.Message}\nResponse JSON: {responseJson}");
+            Debug.LogError($"Error parsing Gemini response: {e.Message}");
             return "Mi dispiace, I am having trouble forming my thoughts...";
         }
     }
@@ -107,35 +103,20 @@ public class GeminiService
     private class GeminiResponse
     {
         public Candidate[] candidates { get; set; }
-        public PromptFeedback promptFeedback { get; set; }
     }
 
     private class Candidate
     {
         public Content content { get; set; }
-        public string finishReason { get; set; }
-        public int index { get; set; }
     }
 
     private class Content
     {
         public Part[] parts { get; set; }
-        public string role { get; set; }
     }
 
     private class Part
     {
         public string text { get; set; }
-    }
-
-    private class PromptFeedback
-    {
-        public SafetyRating[] safetyRatings { get; set; }
-    }
-
-    private class SafetyRating
-    {
-        public string category { get; set; }
-        public string probability { get; set; }
     }
 }

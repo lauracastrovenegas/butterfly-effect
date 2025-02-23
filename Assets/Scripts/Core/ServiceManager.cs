@@ -1,4 +1,3 @@
-// Assets/Scripts/Core/ServiceManager.cs
 using UnityEngine;
 using System;
 using System.Threading.Tasks;
@@ -8,36 +7,33 @@ using System.IO;
 public class ServiceManager : MonoBehaviour
 {
     public static ServiceManager Instance { get; private set; }
-    
+
+    // Add the animation event system
+    public delegate void AnimationTriggerHandler(string marker);
+    public event AnimationTriggerHandler OnAnimationTrigger;
+
     private GeminiService geminiService;
     private ElevenLabsService elevenLabsService;
     private VoiceSDKManager voiceSDKManager;
     private AudioManager audioManager;
-    
-    private ConfigData configData;
-    
+    private CharacterContext currentContext;
+
     [Serializable]
     private class ConfigData
     {
         public ApiKeys ApiKeys;
         public VoiceConfig VoiceConfig;
     }
-    
+
     [Serializable]
     private class ApiKeys
     {
         public string Gemini;
         public string ElevenLabs;
     }
-    
-    [Serializable]
-    private class VoiceConfig
-    {
-        public string VoiceId;
-        public float Stability;
-        public float SimilarityBoost;
-    }
-    
+
+    private ConfigData configData;
+
     private void Awake()
     {
         if (Instance == null)
@@ -51,20 +47,18 @@ public class ServiceManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
-    
-    private async void InitializeServices()
+
+    private void InitializeServices()
     {
         try
         {
-            // Load configuration
             LoadConfiguration();
             
-            // Initialize services
             geminiService = new GeminiService(configData.ApiKeys.Gemini);
             elevenLabsService = new ElevenLabsService(configData.ApiKeys.ElevenLabs, configData.VoiceConfig);
             voiceSDKManager = gameObject.AddComponent<VoiceSDKManager>();
             audioManager = gameObject.AddComponent<AudioManager>();
-            
+
             Debug.Log("Services initialized successfully");
         }
         catch (Exception e)
@@ -72,7 +66,7 @@ public class ServiceManager : MonoBehaviour
             Debug.LogError($"Failed to initialize services: {e.Message}");
         }
     }
-    
+
     private void LoadConfiguration()
     {
         string configPath = Path.Combine(Application.streamingAssetsPath, "config.json");
@@ -80,24 +74,36 @@ public class ServiceManager : MonoBehaviour
         {
             throw new FileNotFoundException("Configuration file not found. Please create config.json from template.");
         }
-        
+
         string jsonContent = File.ReadAllText(configPath);
         configData = JsonConvert.DeserializeObject<ConfigData>(jsonContent);
     }
-    
-    public async Task<AudioClip> ProcessUserInput(string userInput, Transform audioSource)
+
+    public async Task<AudioClip> ProcessUserInput(string userInput, Transform audioSource, CharacterContext context = null)
     {
         try
         {
-            // Get response from Gemini
+            currentContext = context;
+            // Get AI response
             string response = await geminiService.GetResponse(userInput);
+
+            // Parse for animation markers if we have a context
+            if (currentContext != null)
+            {
+                var (marker, cleanResponse) = currentContext.ParseResponse(response);
+                OnAnimationTrigger?.Invoke(marker);
+                response = cleanResponse;
+            }
             
             // Convert to audio using ElevenLabs
             AudioClip audioClip = await elevenLabsService.GenerateVoice(response);
-            
+
             // Play through audio manager
-            audioManager.PlaySpatialAudio(audioClip, audioSource);
-            
+            if (audioClip != null)
+            {
+                audioManager.PlaySpatialAudio(audioClip, audioSource);
+            }
+
             return audioClip;
         }
         catch (Exception e)
