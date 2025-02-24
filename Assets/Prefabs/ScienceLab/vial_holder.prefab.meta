@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 157492b99ce80a240b1d520e99a841bc
+timeCreated: 1533044209
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 126105
+  packageName: LOW POLY WORLD - LABORATORY
+  packageVersion: 2.0
+  assetPath: Assets/LOW POLY WORLD - LABORATORY/LOW POLY WORLD - LABORATORY/models/prefab/vial_holder.prefab
+  uploadId: 619443
