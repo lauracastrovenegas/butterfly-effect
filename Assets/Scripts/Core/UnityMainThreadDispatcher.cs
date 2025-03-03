@@ -106,6 +106,26 @@ public class UnityMainThreadDispatcher : MonoBehaviour
         return tcs.Task;
     }
 
+    public async Task EnqueueAsync(Func<Task> action)
+    {
+        var tcs = new TaskCompletionSource<bool>();
+
+        Enqueue(async () =>
+        {
+            try
+            {
+                await action();
+                tcs.SetResult(true);
+            }
+            catch (Exception e)
+            {
+                tcs.SetException(e);
+            }
+        });
+
+        await tcs.Task;
+    }
+
     private void OnDestroy()
     {
         if (_instance == this)
