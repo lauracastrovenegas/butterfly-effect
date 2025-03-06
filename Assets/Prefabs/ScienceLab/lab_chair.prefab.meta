@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: ed251c9c3c8311b4581c2d35df538066
+timeCreated: 1533044084
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 126105
+  packageName: LOW POLY WORLD - LABORATORY
+  packageVersion: 2.0
+  assetPath: Assets/LOW POLY WORLD - LABORATORY/LOW POLY WORLD - LABORATORY/models/prefab/lab_chair.prefab
+  uploadId: 619443
