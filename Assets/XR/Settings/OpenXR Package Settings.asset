@@ -573,10 +573,15 @@ MonoBehaviour:
   m_autoColorSubmissionMode: 1
   m_colorSubmissionModes:
     m_List: 00000000
+  m_eyeTrackingPermissionsToRequest:
+  - com.oculus.permission.EYE_TRACKING
+  - android.permission.EYE_TRACKING
+  - android.permission.EYE_TRACKING_FINE
   m_depthSubmissionMode: 0
   m_optimizeBufferDiscards: 0
   m_symmetricProjection: 0
   m_foveatedRenderingApi: 0
+  versionChanged: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -751,10 +756,15 @@ MonoBehaviour:
   m_autoColorSubmissionMode: 1
   m_colorSubmissionModes:
     m_List: 00000000
+  m_eyeTrackingPermissionsToRequest:
+  - com.oculus.permission.EYE_TRACKING
+  - android.permission.EYE_TRACKING
+  - android.permission.EYE_TRACKING_FINE
   m_depthSubmissionMode: 0
   m_optimizeBufferDiscards: 0
   m_symmetricProjection: 0
   m_foveatedRenderingApi: 0
+  versionChanged: 0
 --- !u!114 &5241457424399884153
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -894,10 +904,15 @@ MonoBehaviour:
   m_autoColorSubmissionMode: 1
   m_colorSubmissionModes:
     m_List: 00000000
+  m_eyeTrackingPermissionsToRequest:
+  - com.oculus.permission.EYE_TRACKING
+  - android.permission.EYE_TRACKING
+  - android.permission.EYE_TRACKING_FINE
   m_depthSubmissionMode: 0
   m_optimizeBufferDiscards: 0
   m_symmetricProjection: 0
   m_foveatedRenderingApi: 0
+  versionChanged: 0
 --- !u!114 &6196302227085494490
 MonoBehaviour:
   m_ObjectHideFlags: 0
