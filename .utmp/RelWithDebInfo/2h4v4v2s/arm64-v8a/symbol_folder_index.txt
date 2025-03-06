@@ -1,0 +1,1 @@
+C:\Users\river\Documents\GitHub\butterfly-effect\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\build\intermediates\cxx\RelWithDebInfo\2h4v4v2s\obj\arm64-v8a

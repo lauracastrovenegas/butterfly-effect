@@ -2,10 +2,9 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class SimpleWormholeCutscene : MonoBehaviour
+public class AutoWormholeCutscene : MonoBehaviour
 {
     [Header("Audio")]
-    public AudioSource audioSource;
     public AudioClip firstSound;      // Plays immediately
     public AudioClip secondSound;     // Plays after delay
     
@@ -13,14 +12,12 @@ public class SimpleWormholeCutscene : MonoBehaviour
     public float secondSoundDelay = 5f;    // Time before second sound plays
     public float sceneTransitionDelay = 16f; // Total time before scene transition
     
-    [Header("Visuals")]
-    public GameObject wormholeEffect;
-    
+    private AudioSource audioSource;
     private string destinationScene;
     
     void Start()
     {
-        // Get destination from player prefs (set by the time machine controller)
+        // Get destination from player prefs
         if (PlayerPrefs.HasKey("DestinationScene"))
         {
             destinationScene = PlayerPrefs.GetString("DestinationScene");
@@ -31,17 +28,16 @@ public class SimpleWormholeCutscene : MonoBehaviour
             destinationScene = "Workshop";
         }
         
-        // Setup audio source if needed
+        // Setup audio source
+        audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
         {
-            audioSource = GetComponent<AudioSource>();
-            if (audioSource == null)
-            {
-                audioSource = gameObject.AddComponent<AudioSource>();
-            }
+            audioSource = gameObject.AddComponent<AudioSource>();
         }
         
-        // Start the cutscene sequence
+        Debug.Log($"Wormhole cutscene starting, will transition to {destinationScene} after {sceneTransitionDelay} seconds");
+        
+        // Start the sequence
         StartCoroutine(CutsceneSequence());
     }
     
@@ -52,6 +48,7 @@ public class SimpleWormholeCutscene : MonoBehaviour
         {
             audioSource.clip = firstSound;
             audioSource.Play();
+            Debug.Log("Playing first sound");
         }
         
         // Wait before playing second sound
@@ -62,16 +59,19 @@ public class SimpleWormholeCutscene : MonoBehaviour
         {
             audioSource.clip = secondSound;
             audioSource.Play();
+            Debug.Log("Playing second sound");
         }
         
         // Wait remaining time before scene transition
         float remainingTime = sceneTransitionDelay - secondSoundDelay;
         if (remainingTime > 0)
         {
+            Debug.Log($"Waiting {remainingTime} seconds before transitioning to {destinationScene}");
             yield return new WaitForSeconds(remainingTime);
         }
         
         // Load destination scene
+        Debug.Log($"Loading destination scene: {destinationScene}");
         SceneManager.LoadScene(destinationScene);
     }
 }

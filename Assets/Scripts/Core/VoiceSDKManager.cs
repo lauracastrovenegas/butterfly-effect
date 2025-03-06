@@ -13,19 +13,36 @@ public class VoiceSDKManager : MonoBehaviour
     private AppVoiceExperience voiceExperience;
     private bool isListening = false;
     private TaskCompletionSource<string> currentTranscriptionTask;
+    
+    [Header("Debug Settings")]
+    [SerializeField] private bool autoActivateVoice = true;
+    [SerializeField] private bool enableDebugLogs = true;
+    [SerializeField] private float activationInterval = 5f;
+    private float activationTimer = 0f;
 
+    [Header("UI References")]
     public TextMeshProUGUI transcriptionText; // Optional: For debugging
 
     private void Start()
     {
-        // Get or add AppVoiceExperience
-        voiceExperience = gameObject.GetComponent<AppVoiceExperience>();
+        // Get the AppVoiceExperience component
+        voiceExperience = GetComponent<AppVoiceExperience>();
         if (voiceExperience == null)
         {
-            voiceExperience = gameObject.AddComponent<AppVoiceExperience>();
+            LogMessage("AppVoiceExperience component not found!", true);
+            enabled = false;
+            return;
         }
 
         // Setup voice callbacks
+        SetupVoiceCallbacks();
+        
+        LogMessage("VoiceSDKManager initialized");
+        LogMessage($"Available microphones: {string.Join(", ", Microphone.devices)}");
+    }
+
+    private void SetupVoiceCallbacks()
+    {
         voiceExperience.VoiceEvents.OnStartListening.AddListener(OnStartedListening);
         voiceExperience.VoiceEvents.OnStoppedListening.AddListener(OnStoppedListening);
         voiceExperience.VoiceEvents.OnFullTranscription.AddListener(OnFullTranscriptionReceived);
@@ -33,14 +50,42 @@ public class VoiceSDKManager : MonoBehaviour
         voiceExperience.VoiceEvents.OnError.AddListener(OnError);
     }
 
+    private void Update()
+    {
+        if (autoActivateVoice && !isListening)
+        {
+            activationTimer += Time.deltaTime;
+            if (activationTimer >= activationInterval)
+            {
+                activationTimer = 0f;
+                LogMessage("Auto-activating voice recognition");
+                ActivateVoiceInput();
+            }
+        }
+    }
+
+    public void ActivateVoiceInput()
+    {
+        if (isListening)
+        {
+            LogMessage("Already listening");
+            return;
+        }
+
+        isListening = true;
+        voiceExperience.Activate();
+        LogMessage("Voice recognition activated");
+    }
+
     public async Task<string> StartListeningAsync()
     {
         if (isListening)
         {
-            Debug.LogWarning("Already listening for voice input");
+            LogMessage("Already listening for voice input");
             return null;
         }
 
+        LogMessage("Starting listening async");
         currentTranscriptionTask = new TaskCompletionSource<string>();
         isListening = true;
 
@@ -55,11 +100,12 @@ public class VoiceSDKManager : MonoBehaviour
 
         voiceExperience.Deactivate();
         isListening = false;
+        LogMessage("Stopped listening");
     }
 
     private void OnStartedListening()
     {
-        Debug.Log("Started listening for voice input");
+        LogMessage("Started listening for voice input");
         if (transcriptionText != null)
         {
             transcriptionText.text = "Listening...";
@@ -68,12 +114,13 @@ public class VoiceSDKManager : MonoBehaviour
 
     private void OnStoppedListening()
     {
-        Debug.Log("Stopped listening for voice input");
+        LogMessage("Stopped listening for voice input");
         isListening = false;
     }
 
     private void OnPartialTranscriptionReceived(string transcription)
     {
+        LogMessage($"Partial: {transcription}");
         if (transcriptionText != null)
         {
             transcriptionText.text = $"Hearing: {transcription}";
@@ -82,7 +129,7 @@ public class VoiceSDKManager : MonoBehaviour
 
     private void OnFullTranscriptionReceived(string transcription)
     {
-        Debug.Log($"Full transcription received: {transcription}");
+        LogMessage($"Full transcription: {transcription}");
         
         if (transcriptionText != null)
         {
@@ -95,11 +142,26 @@ public class VoiceSDKManager : MonoBehaviour
         }
 
         isListening = false;
+        
+        // Automatically process transcription with character
+        if (!string.IsNullOrEmpty(transcription))
+        {
+            var character = UnityEngine.Object.FindFirstObjectByType<AICharacterController>();
+            if (character != null)
+            {
+                LogMessage($"Sending to character: {transcription}");
+                character.ProcessUserInput(transcription);
+            }
+            else
+            {
+                LogMessage("No AICharacterController found", true);
+            }
+        }
     }
 
     private void OnError(string error, string message)
     {
-        Debug.LogError($"Voice SDK Error: {error} - {message}");
+        LogMessage($"Error: {error} - {message}", true);
         
         if (currentTranscriptionTask != null && !currentTranscriptionTask.Task.IsCompleted)
         {
@@ -112,6 +174,16 @@ public class VoiceSDKManager : MonoBehaviour
         }
 
         isListening = false;
+    }
+
+    private void LogMessage(string message, bool isError = false)
+    {
+        if (!enableDebugLogs) return;
+        
+        if (isError)
+            Debug.LogError($"[VoiceSDK] {message}");
+        else
+            Debug.Log($"[VoiceSDK] {message}");
     }
 
     private void OnDestroy()
