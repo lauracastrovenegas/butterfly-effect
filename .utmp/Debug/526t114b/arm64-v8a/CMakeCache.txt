@@ -112,7 +112,7 @@ CMAKE_FIND_ROOT_PATH:UNINITIALIZED=/Users/lauracastrovenegas/Documents/Stanford/
 CMAKE_INSTALL_PREFIX:PATH=/usr/local
 
 //No help, variable specified on the command line.
-CMAKE_LIBRARY_OUTPUT_DIRECTORY:UNINITIALIZED=/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/Debug/526t114b/obj/arm64-v8a
+CMAKE_LIBRARY_OUTPUT_DIRECTORY:UNINITIALIZED=/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/PramData/AndroidApplicationController/Cache/com.UnityTechnologies.com.unity.template.urpblank/gradle-project/unityLibrary/build/intermediates/cxx/Debug/526t114b/obj/arm64-v8a
 
 //Path to a program.
 CMAKE_LINKER:FILEPATH=/Applications/Unity/Hub/Editor/6000.0.32f1/PlaybackEngines/AndroidPlayer/NDK/toolchains/llvm/prebuilt/darwin-x86_64/bin/ld.lld
@@ -165,7 +165,7 @@ CMAKE_RANLIB:FILEPATH=/Applications/Unity/Hub/Editor/6000.0.32f1/PlaybackEngines
 CMAKE_READELF:FILEPATH=/Applications/Unity/Hub/Editor/6000.0.32f1/PlaybackEngines/AndroidPlayer/NDK/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-readelf
 
 //No help, variable specified on the command line.
-CMAKE_RUNTIME_OUTPUT_DIRECTORY:UNINITIALIZED=/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/Debug/526t114b/obj/arm64-v8a
+CMAKE_RUNTIME_OUTPUT_DIRECTORY:UNINITIALIZED=/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/PramData/AndroidApplicationController/Cache/com.UnityTechnologies.com.unity.template.urpblank/gradle-project/unityLibrary/build/intermediates/cxx/Debug/526t114b/obj/arm64-v8a
 
 //Flags used by the linker during the creation of shared libraries
 // during all build types.
@@ -239,7 +239,7 @@ Unity_BINARY_DIR:STATIC=/Users/lauracastrovenegas/Documents/Stanford/cs11si/butt
 Unity_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
-Unity_SOURCE_DIR:STATIC=/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp
+Unity_SOURCE_DIR:STATIC=/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/PramData/AndroidApplicationController/Cache/com.UnityTechnologies.com.unity.template.urpblank/gradle-project/unityLibrary/src/main/cpp
 
 //The directory containing a CMake configuration file for game-activity.
 game-activity_DIR:PATH=/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/.utmp/Debug/526t114b/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/game-activity
@@ -254,7 +254,7 @@ game_IS_TOP_LEVEL:STATIC=OFF
 game_LIB_DEPENDS:STATIC=general;android;general;game-activity::game-activity_static;general;log;
 
 //Value Computed by CMake
-game_SOURCE_DIR:STATIC=/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp/GameActivity
+game_SOURCE_DIR:STATIC=/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/PramData/AndroidApplicationController/Cache/com.UnityTechnologies.com.unity.template.urpblank/gradle-project/unityLibrary/src/main/cpp/GameActivity
 
 
 ########################
@@ -335,7 +335,7 @@ CMAKE_GENERATOR_PLATFORM:INTERNAL=
 CMAKE_GENERATOR_TOOLSET:INTERNAL=
 //Source directory with the top level CMakeLists.txt file for this
 // project
-CMAKE_HOME_DIRECTORY:INTERNAL=/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp
+CMAKE_HOME_DIRECTORY:INTERNAL=/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/PramData/AndroidApplicationController/Cache/com.UnityTechnologies.com.unity.template.urpblank/gradle-project/unityLibrary/src/main/cpp
 //Install .so files without execute permission.
 CMAKE_INSTALL_SO_NO_EXE:INTERNAL=0
 //ADVANCED property for variable: CMAKE_LINKER

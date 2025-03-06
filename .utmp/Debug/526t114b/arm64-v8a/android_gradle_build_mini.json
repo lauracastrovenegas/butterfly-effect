@@ -1,7 +1,7 @@
 {
   "buildFiles": [
-    "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp/CMakeLists.txt",
-    "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp/GameActivity/CMakeLists.txt"
+    "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/PramData/AndroidApplicationController/Cache/com.UnityTechnologies.com.unity.template.urpblank/gradle-project/unityLibrary/src/main/cpp/CMakeLists.txt",
+    "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/PramData/AndroidApplicationController/Cache/com.UnityTechnologies.com.unity.template.urpblank/gradle-project/unityLibrary/src/main/cpp/GameActivity/CMakeLists.txt"
   ],
   "cleanCommandsComponents": [
     [
@@ -21,7 +21,7 @@
     "game::@d02bb112ea9f9c2ed29f": {
       "artifactName": "game",
       "abi": "arm64-v8a",
-      "output": "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/Debug/526t114b/obj/arm64-v8a/libgame.so",
+      "output": "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/PramData/AndroidApplicationController/Cache/com.UnityTechnologies.com.unity.template.urpblank/gradle-project/unityLibrary/build/intermediates/cxx/Debug/526t114b/obj/arm64-v8a/libgame.so",
       "runtimeFiles": []
     }
   }

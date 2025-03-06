@@ -671,7 +671,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp"
+			"value" : "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/PramData/AndroidApplicationController/Cache/com.UnityTechnologies.com.unity.template.urpblank/gradle-project/unityLibrary/src/main/cpp"
 		},
 		{
 			"name" : "CMAKE_INSTALL_PREFIX",
@@ -707,7 +707,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/Debug/526t114b/obj/arm64-v8a"
+			"value" : "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/PramData/AndroidApplicationController/Cache/com.UnityTechnologies.com.unity.template.urpblank/gradle-project/unityLibrary/build/intermediates/cxx/Debug/526t114b/obj/arm64-v8a"
 		},
 		{
 			"name" : "CMAKE_LINKER",
@@ -979,7 +979,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/Debug/526t114b/obj/arm64-v8a"
+			"value" : "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/PramData/AndroidApplicationController/Cache/com.UnityTechnologies.com.unity.template.urpblank/gradle-project/unityLibrary/build/intermediates/cxx/Debug/526t114b/obj/arm64-v8a"
 		},
 		{
 			"name" : "CMAKE_SHARED_LINKER_FLAGS",
@@ -1287,7 +1287,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp"
+			"value" : "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/PramData/AndroidApplicationController/Cache/com.UnityTechnologies.com.unity.template.urpblank/gradle-project/unityLibrary/src/main/cpp"
 		},
 		{
 			"name" : "game-activity_DIR",
@@ -1347,7 +1347,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/src/main/cpp/GameActivity"
+			"value" : "/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/PramData/AndroidApplicationController/Cache/com.UnityTechnologies.com.unity.template.urpblank/gradle-project/unityLibrary/src/main/cpp/GameActivity"
 		}
 	],
 	"kind" : "cache",
