@@ -1,0 +1,10 @@
+# ninja log v5
+2	683	1741226850483362913	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	3a1fb83accff7832
+1	862	1741226850662494073	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	e86f52583b51b1c1
+3	915	1741226850714209775	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	ee42f40ee83e8184
+6	971	1741226850771350073	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	b4f9bf61749bc777
+10	973	1741226850772095950	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	f8fee47e84fafa6c
+10	993	1741226850793526957	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	a638e6773282db3a
+3	1052	1741226850852111925	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	3d84a43cfab395bb
+0	1125	1741226850925227093	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	92f7817e4e41a1a0
+1125	1241	1741226851036908807	/Users/lauracastrovenegas/Documents/Stanford/cs11si/butterfly-effect/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/Debug/526t114b/obj/arm64-v8a/libgame.so	ac59736d60e4360b
