@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: de72152a422e0c440a6db5b27aac9a43
+timeCreated: 1534409844
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 126105
+  packageName: LOW POLY WORLD - LABORATORY
+  packageVersion: 2.0
+  assetPath: Assets/LOW POLY WORLD - LABORATORY/LOW POLY WORLD - LABORATORY/models/Materials/wall.mat
+  uploadId: 619443

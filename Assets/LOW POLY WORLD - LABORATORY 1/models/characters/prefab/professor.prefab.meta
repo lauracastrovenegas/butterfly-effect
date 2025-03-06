@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 2158e2203be007844a0184b0f89d795b
+timeCreated: 1534431152
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 126105
+  packageName: LOW POLY WORLD - LABORATORY
+  packageVersion: 2.0
+  assetPath: Assets/LOW POLY WORLD - LABORATORY/LOW POLY WORLD - LABORATORY/models/characters/prefab/professor.prefab
+  uploadId: 619443
