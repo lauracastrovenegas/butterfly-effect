@@ -17,12 +17,14 @@ public class ServiceManager : MonoBehaviour
     private VoiceSDKManager voiceSDKManager;
     private AudioManager audioManager;
     private CharacterContext currentContext;
+    private BackgroundMusicManager musicManager;
 
     [Serializable]
     private class ConfigData
     {
         public ApiKeys ApiKeys;
         public VoiceConfig VoiceConfig;
+        public MusicConfig MusicConfig;
     }
 
     [Serializable]
@@ -32,7 +34,17 @@ public class ServiceManager : MonoBehaviour
         public string ElevenLabs;
     }
 
+    [Serializable]
+    private class MusicConfig
+    {
+        public float Volume = 0.3f;
+        public bool AutoPlay = true;
+        public string MusicTitle = "O Mia ciecha e dura sorte";
+        public string Composer = "Marchetto Cara";
+    }
+
     private ConfigData configData;
+    private ResponseCache responseCache;
 
     private void Awake()
     {
@@ -58,6 +70,11 @@ public class ServiceManager : MonoBehaviour
             elevenLabsService = new ElevenLabsService(configData.ApiKeys.ElevenLabs, configData.VoiceConfig);
             voiceSDKManager = gameObject.AddComponent<VoiceSDKManager>();
             audioManager = gameObject.AddComponent<AudioManager>();
+            musicManager = gameObject.AddComponent<BackgroundMusicManager>();
+            responseCache = new ResponseCache();
+
+            // Configure music manager with settings
+            musicManager.Initialize(configData.MusicConfig.Volume, configData.MusicConfig.AutoPlay);
 
             Debug.Log("Services initialized successfully");
         }
@@ -83,27 +100,41 @@ public class ServiceManager : MonoBehaviour
     {
         try
         {
-            currentContext = context;
+            currentContext = context ?? currentContext;
             
             // Get AI response
             string response = await geminiService.GetResponse(userInput);
+            string marker = "NORMAL";
+            string cleanResponse = response;
 
             // Parse for animation markers if we have a context
             if (currentContext != null)
             {
-                var (marker, cleanResponse) = currentContext.ParseResponse(response);
+                var parsedResponse = currentContext.ParseResponse(response);
+                marker = parsedResponse.marker;
+                cleanResponse = parsedResponse.response;
+                
+                // Trigger animation based on marker
                 OnAnimationTrigger?.Invoke(marker);
-                response = cleanResponse;
             }
             
-            // Convert to audio using ElevenLabs
-            AudioClip audioClip = await elevenLabsService.GenerateVoice(response);
+            // Check cache first before generating new audio
+            if (responseCache.TryGetCachedResponse(cleanResponse, out AudioClip cachedClip))
+            {
+                Debug.Log($"[ServiceManager] Using cached audio clip");
+                audioManager.PlaySpatialAudio(cachedClip, audioSource);
+                return cachedClip;
+            }
+            
+            // Convert to audio using ElevenLabs - important: use cleanResponse without markers
+            AudioClip audioClip = await elevenLabsService.GenerateVoice(cleanResponse);
 
             // Ensure audio clip was created successfully
             if (audioClip != null && audioClip.length > 0)
             {
                 Debug.Log($"[ServiceManager] Generated audio clip length: {audioClip.length}s");
                 audioManager.PlaySpatialAudio(audioClip, audioSource);
+                responseCache.CacheResponse(cleanResponse, audioClip);
             }
             else
             {
