@@ -150,12 +150,26 @@ public class VoiceSDKManager : MonoBehaviour
             if (character != null)
             {
                 LogMessage($"Sending to character: {transcription}");
-                character.ProcessUserInput(transcription);
+                // Fix for CS4014 warning - explicitly ignore the task with discard operator
+                _ = ProcessTranscriptionAsync(character, transcription);
             }
             else
             {
                 LogMessage("No AICharacterController found", true);
             }
+        }
+    }
+
+    // New helper method to handle the async operation properly
+    private async Task ProcessTranscriptionAsync(AICharacterController character, string transcription)
+    {
+        try
+        {
+            await character.ProcessUserInput(transcription);
+        }
+        catch (Exception ex)
+        {
+            LogMessage($"Error processing transcription: {ex.Message}", true);
         }
     }
 
