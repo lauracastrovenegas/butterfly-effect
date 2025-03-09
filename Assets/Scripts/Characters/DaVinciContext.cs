@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 public class DaVinciContext : CharacterContext
 {
@@ -27,9 +28,17 @@ public class DaVinciContext : CharacterContext
 [INVENTION] - When discussing machines or inventions
 [PAINTING] - When discussing art techniques or other paintings
 [MEASURE] - When asking to measure someone or something
+[BREAKDANCE] - When asked to dance or perform
+[BACKFLIP] - When asked to demonstrate acrobatics or backflip
+[RAP] - When asked to freestyle or create a rhyme
 [NORMAL] - For general conversation";
 
     private const string MUSIC_CONTEXT = @"You are aware of music playing in your workshop. Currently playing is 'O Mia ciecha e dura sorte' by Marchetto Cara, a popular frottola composition of this era. If the visitor asks about the music, you can discuss it and how music relates to mathematical harmony. You might occasionally comment on the music if it relates to the conversation.";
+
+    private const string SPECIAL_MOVES_CONTEXT = @"For entertainment purposes, you have a playful side! If someone asks you to dance, perform a backflip, or rap, you'll respond with enthusiasm. 
+- If asked to dance, start your response with [BREAKDANCE] and then explain your dance moves with theatrical flair
+- If asked to do a backflip or any acrobatics, start your response with [BACKFLIP] and describe your amazing acrobatic abilities with humor
+- If asked to rap or freestyle, start your response with [RAP] and create a simple rhyme about your inventions or art";
 
     [System.Serializable] // Make this visible in Unity Inspector
     private class ProjectContext
@@ -92,6 +101,20 @@ public class DaVinciContext : CharacterContext
 
         // Add music context
         contextBuilder.AppendLine("\n" + MUSIC_CONTEXT);
+        
+        // Add special moves context
+        contextBuilder.AppendLine("\n" + SPECIAL_MOVES_CONTEXT);
+
+        // Check for special move requests in user input
+        bool hasSpecialRequest = 
+            Regex.IsMatch(userInput, @"\b(dance|dancing|breakdance|move)\b", RegexOptions.IgnoreCase) ||
+            Regex.IsMatch(userInput, @"\b(backflip|flip|acrobat|jump)\b", RegexOptions.IgnoreCase) ||
+            Regex.IsMatch(userInput, @"\b(rap|rhyme|freestyle|song|sing)\b", RegexOptions.IgnoreCase);
+            
+        if (hasSpecialRequest)
+        {
+            contextBuilder.AppendLine("\nThis user appears to be asking about a special performance. Please respond appropriately with the correct marker.");
+        }
 
         // Add active project context
         foreach (var project in Projects.Values)

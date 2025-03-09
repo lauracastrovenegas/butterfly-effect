@@ -17,7 +17,6 @@ public class ServiceManager : MonoBehaviour
     private VoiceSDKManager voiceSDKManager;
     private AudioManager audioManager;
     private CharacterContext currentContext;
-    private BackgroundMusicManager musicManager;
 
     [Serializable]
     private class ConfigData
@@ -39,12 +38,17 @@ public class ServiceManager : MonoBehaviour
     {
         public float Volume = 0.3f;
         public bool AutoPlay = true;
-        public string MusicTitle = "O Mia ciecha e dura sorte";
-        public string Composer = "Marchetto Cara";
     }
 
     private ConfigData configData;
     private ResponseCache responseCache;
+
+    [Header("Background Music")]
+    [SerializeField] private AudioClip backgroundMusic;
+    [SerializeField] private float musicVolume = 0.3f;
+    [SerializeField] private bool playMusicOnAwake = true;
+    
+    private AudioSource musicSource;
 
     private void Awake()
     {
@@ -70,17 +74,41 @@ public class ServiceManager : MonoBehaviour
             elevenLabsService = new ElevenLabsService(configData.ApiKeys.ElevenLabs, configData.VoiceConfig);
             voiceSDKManager = gameObject.AddComponent<VoiceSDKManager>();
             audioManager = gameObject.AddComponent<AudioManager>();
-            musicManager = gameObject.AddComponent<BackgroundMusicManager>();
+            
+            // Setup music player
+            SetupBackgroundMusic();
+            
             responseCache = new ResponseCache();
-
-            // Configure music manager with settings
-            musicManager.Initialize(configData.MusicConfig.Volume, configData.MusicConfig.AutoPlay);
 
             Debug.Log("Services initialized successfully");
         }
         catch (Exception e)
         {
             Debug.LogError($"Failed to initialize services: {e.Message}");
+        }
+    }
+
+    private void SetupBackgroundMusic()
+    {
+        // Create audio source for background music
+        musicSource = gameObject.AddComponent<AudioSource>();
+        musicSource.clip = backgroundMusic;
+        musicSource.loop = true;
+        musicSource.volume = musicVolume;
+        musicSource.playOnAwake = false;
+        musicSource.spatialBlend = 0f; // 2D sound
+        
+        // Apply settings from config if available
+        if (configData.MusicConfig != null)
+        {
+            musicSource.volume = configData.MusicConfig.Volume;
+            playMusicOnAwake = configData.MusicConfig.AutoPlay;
+        }
+        
+        // Start playing if set to play on awake
+        if (playMusicOnAwake && backgroundMusic != null)
+        {
+            musicSource.Play();
         }
     }
 
@@ -147,6 +175,55 @@ public class ServiceManager : MonoBehaviour
         {
             Debug.LogError($"[ServiceManager] Error processing user input: {e.Message}");
             return null;
+        }
+    }
+    
+    // Music control methods
+    public void PlayMusic()
+    {
+        if (musicSource != null && backgroundMusic != null && !musicSource.isPlaying)
+        {
+            musicSource.Play();
+        }
+    }
+    
+    public void PauseMusic()
+    {
+        if (musicSource != null && musicSource.isPlaying)
+        {
+            musicSource.Pause();
+        }
+    }
+    
+    public void StopMusic()
+    {
+        if (musicSource != null)
+        {
+            musicSource.Stop();
+        }
+    }
+    
+    public void SetMusicVolume(float volume)
+    {
+        if (musicSource != null)
+        {
+            musicSource.volume = Mathf.Clamp01(volume);
+        }
+    }
+    
+    public void ChangeMusic(AudioClip newMusic)
+    {
+        if (musicSource != null && newMusic != null)
+        {
+            bool wasPlaying = musicSource.isPlaying;
+            musicSource.Stop();
+            musicSource.clip = newMusic;
+            backgroundMusic = newMusic;
+            
+            if (wasPlaying)
+            {
+                musicSource.Play();
+            }
         }
     }
 }
