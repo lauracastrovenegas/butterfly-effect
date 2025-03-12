@@ -12,6 +12,7 @@ public class VoiceSDKManager : MonoBehaviour
 {
     private AppVoiceExperience voiceExperience;
     private bool isListening = false;
+    private bool isProcessing = false; // Track when we're processing input
     private TaskCompletionSource<string> currentTranscriptionTask;
     
     // Add tracking for last processed transcription to prevent duplicates
@@ -22,8 +23,9 @@ public class VoiceSDKManager : MonoBehaviour
     [Header("Debug Settings")]
     [SerializeField] private bool autoActivateVoice = true;
     [SerializeField] private bool enableDebugLogs = true;
-    [SerializeField] private float activationInterval = 5f;
+    [SerializeField] private float activationInterval = 0.5f; // Reduced from 5f to 0.5f for quicker reactivation
     private float activationTimer = 0f;
+    [SerializeField] private float reactivationDelay = 0.2f; // Short delay before reactivating
 
     [Header("UI References")]
     public TextMeshProUGUI transcriptionText; // Optional: For debugging
@@ -44,6 +46,9 @@ public class VoiceSDKManager : MonoBehaviour
         
         LogMessage("VoiceSDKManager initialized");
         LogMessage($"Available microphones: {string.Join(", ", Microphone.devices)}");
+        
+        // Activate voice input immediately at start
+        ActivateVoiceInput();
     }
 
     private void SetupVoiceCallbacks()
@@ -57,7 +62,8 @@ public class VoiceSDKManager : MonoBehaviour
 
     private void Update()
     {
-        if (autoActivateVoice && !isListening)
+        // Only try to reactivate if not currently listening or processing
+        if (autoActivateVoice && !isListening && !isProcessing)
         {
             activationTimer += Time.deltaTime;
             if (activationTimer >= activationInterval)
@@ -71,9 +77,9 @@ public class VoiceSDKManager : MonoBehaviour
 
     public void ActivateVoiceInput()
     {
-        if (isListening)
+        if (isListening || isProcessing)
         {
-            LogMessage("Already listening");
+            LogMessage("Already listening or processing");
             return;
         }
 
@@ -106,6 +112,33 @@ public class VoiceSDKManager : MonoBehaviour
         voiceExperience.Deactivate();
         isListening = false;
         LogMessage("Stopped listening");
+        
+        // Schedule reactivation after a short delay
+        if (autoActivateVoice)
+        {
+            StartImmediateReactivation();
+        }
+    }
+    
+    // New method to ensure quick reactivation
+    private async void StartImmediateReactivation()
+    {
+        try
+        {
+            // Wait a short time before reactivating
+            await Task.Delay((int)(reactivationDelay * 1000));
+            
+            // Only reactivate if we're not already listening or processing
+            if (!isListening && !isProcessing)
+            {
+                LogMessage("Re-activating voice recognition after processing");
+                ActivateVoiceInput();
+            }
+        }
+        catch (Exception ex)
+        {
+            LogMessage($"Error during reactivation: {ex.Message}", true);
+        }
     }
 
     private void OnStartedListening()
@@ -152,6 +185,8 @@ public class VoiceSDKManager : MonoBehaviour
         if (IsDuplicateTranscription(transcription))
         {
             LogMessage("Skipping duplicate transcription");
+            // Even for duplicates, ensure we're continuously listening
+            StartImmediateReactivation();
             return;
         }
         
@@ -162,13 +197,21 @@ public class VoiceSDKManager : MonoBehaviour
             if (character != null)
             {
                 LogMessage($"Sending to character: {transcription}");
+                isProcessing = true; // Mark that we're processing input
                 // Fix for CS4014 warning - explicitly ignore the task with discard operator
                 _ = ProcessTranscriptionAsync(character, transcription);
             }
             else
             {
                 LogMessage("No AICharacterController found", true);
+                // If no character was found, make sure we're still listening
+                StartImmediateReactivation();
             }
+        }
+        else
+        {
+            // If empty transcription, make sure we're still listening
+            StartImmediateReactivation();
         }
     }
     
@@ -187,7 +230,7 @@ public class VoiceSDKManager : MonoBehaviour
         return false;
     }
 
-    // New helper method to handle the async operation properly
+    // Modified helper method to handle the async operation properly and ensure reactivation
     private async Task ProcessTranscriptionAsync(AICharacterController character, string transcription)
     {
         try
@@ -197,6 +240,12 @@ public class VoiceSDKManager : MonoBehaviour
         catch (Exception ex)
         {
             LogMessage($"Error processing transcription: {ex.Message}", true);
+        }
+        finally
+        {
+            isProcessing = false; // Mark that we're done processing
+            // Ensure we return to listening state
+            StartImmediateReactivation();
         }
     }
 
@@ -215,11 +264,15 @@ public class VoiceSDKManager : MonoBehaviour
         }
 
         isListening = false;
+        isProcessing = false;
+        
+        // Even on error, ensure we return to listening state
+        StartImmediateReactivation();
     }
 
     private void LogMessage(string message, bool isError = false)
     {
-        if (!enableDebugLogs) return;
+        if (!enableDebugLogs && !isError) return;
         
         if (isError)
             Debug.LogError($"[VoiceSDK] {message}");
