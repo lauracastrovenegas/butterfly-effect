@@ -1,8 +1,11 @@
 using UnityEngine;
 using Meta.Voice;
+using Meta.WitAi;
+using Meta.WitAi.Json;
 using System;
 using System.Threading.Tasks;
 using TMPro;
+using Meta.WitAi.Requests;
 using Oculus.Voice;
 
 public class VoiceSDKManager : MonoBehaviour
@@ -11,9 +14,16 @@ public class VoiceSDKManager : MonoBehaviour
     private bool isListening = false;
     private TaskCompletionSource<string> currentTranscriptionTask;
     
-    [Header("Configuration")]
-    [SerializeField] private float restartDelay = 1.0f; // Delay before restarting listening
+    // Add tracking for last processed transcription to prevent duplicates
+    private string lastProcessedTranscription = "";
+    private float duplicatePreventionTimeWindow = 3.0f;
+    private float lastTranscriptionTime = 0;
+    
+    [Header("Debug Settings")]
+    [SerializeField] private bool autoActivateVoice = true;
     [SerializeField] private bool enableDebugLogs = true;
+    [SerializeField] private float activationInterval = 2.5f; // Changed from 5f to 2.5f
+    private float activationTimer = 0f;
 
     [Header("UI References")]
     public TextMeshProUGUI transcriptionText; // Optional: For debugging
@@ -34,9 +44,6 @@ public class VoiceSDKManager : MonoBehaviour
         
         LogMessage("VoiceSDKManager initialized");
         LogMessage($"Available microphones: {string.Join(", ", Microphone.devices)}");
-        
-        // Start listening immediately
-        ActivateVoiceInput();
     }
 
     private void SetupVoiceCallbacks()
@@ -46,6 +53,20 @@ public class VoiceSDKManager : MonoBehaviour
         voiceExperience.VoiceEvents.OnFullTranscription.AddListener(OnFullTranscriptionReceived);
         voiceExperience.VoiceEvents.OnPartialTranscription.AddListener(OnPartialTranscriptionReceived);
         voiceExperience.VoiceEvents.OnError.AddListener(OnError);
+    }
+
+    private void Update()
+    {
+        if (autoActivateVoice && !isListening)
+        {
+            activationTimer += Time.deltaTime;
+            if (activationTimer >= activationInterval)
+            {
+                activationTimer = 0f;
+                LogMessage("Auto-activating voice recognition");
+                ActivateVoiceInput();
+            }
+        }
     }
 
     public void ActivateVoiceInput()
@@ -104,6 +125,7 @@ public class VoiceSDKManager : MonoBehaviour
 
     private void OnPartialTranscriptionReceived(string transcription)
     {
+        LogMessage($"Partial: {transcription}");
         if (transcriptionText != null)
         {
             transcriptionText.text = $"Hearing: {transcription}";
@@ -126,6 +148,13 @@ public class VoiceSDKManager : MonoBehaviour
 
         isListening = false;
         
+        // Check for duplicate transcriptions
+        if (IsDuplicateTranscription(transcription))
+        {
+            LogMessage("Skipping duplicate transcription");
+            return;
+        }
+        
         // Automatically process transcription with character
         if (!string.IsNullOrEmpty(transcription))
         {
@@ -133,22 +162,32 @@ public class VoiceSDKManager : MonoBehaviour
             if (character != null)
             {
                 LogMessage($"Sending to character: {transcription}");
+                // Fix for CS4014 warning - explicitly ignore the task with discard operator
                 _ = ProcessTranscriptionAsync(character, transcription);
             }
             else
             {
                 LogMessage("No AICharacterController found", true);
-                // If no character, restart listening after delay
-                Invoke("ActivateVoiceInput", restartDelay);
             }
         }
-        else
+    }
+    
+    private bool IsDuplicateTranscription(string transcription)
+    {
+        // Check if this is the same as the last transcription and within time window
+        if (transcription == lastProcessedTranscription && 
+            (Time.time - lastTranscriptionTime) < duplicatePreventionTimeWindow)
         {
-            // Empty transcription, restart listening after delay
-            Invoke("ActivateVoiceInput", restartDelay);
+            return true;
         }
+        
+        // Update tracking
+        lastProcessedTranscription = transcription;
+        lastTranscriptionTime = Time.time;
+        return false;
     }
 
+    // New helper method to handle the async operation properly
     private async Task ProcessTranscriptionAsync(AICharacterController character, string transcription)
     {
         try
@@ -158,11 +197,6 @@ public class VoiceSDKManager : MonoBehaviour
         catch (Exception ex)
         {
             LogMessage($"Error processing transcription: {ex.Message}", true);
-        }
-        finally
-        {
-            // Always restart listening after delay, regardless of success/failure
-            Invoke("ActivateVoiceInput", restartDelay);
         }
     }
 
@@ -181,9 +215,6 @@ public class VoiceSDKManager : MonoBehaviour
         }
 
         isListening = false;
-        
-        // Even on error, restart listening after delay
-        Invoke("ActivateVoiceInput", restartDelay);
     }
 
     private void LogMessage(string message, bool isError = false)
