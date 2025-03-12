@@ -3,7 +3,7 @@ using UnityEngine.AI;
 using System.Collections;
 
 [RequireComponent(typeof(NavMeshAgent))]
-public class LeonardoMovementController : MonoBehaviour
+public partial class LeonardoMovementController : MonoBehaviour
 {
     [Header("Movement Settings")]
     [SerializeField] private float minWaitTime = 10f;
@@ -213,5 +213,17 @@ public class LeonardoMovementController : MonoBehaviour
         {
             ServiceManager.Instance.OnAnimationTrigger -= HandleAnimationMarker;
         }
+    } 
+}
+
+// Second part of the partial class
+public partial class LeonardoMovementController : MonoBehaviour
+{
+    // Method to set wait times (fixes warnings in LeonardoSetup.cs)
+    public void SetWaitTimes(float min, float max)
+    {
+        minWaitTime = min;
+        maxWaitTime = max;
+        Debug.Log($"Wait times set to min: {minWaitTime}, max: {maxWaitTime}");
     }
 }

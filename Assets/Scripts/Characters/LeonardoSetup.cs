@@ -26,6 +26,7 @@ public class LeonardoSetup : MonoBehaviour
     [Header("Component Settings")]
     [SerializeField] private float movementSpeed = 1.2f;
     [SerializeField] private float rotationSpeed = 120f;
+    // These fields were causing warnings - they are now used in the SetupLeonardo method
     [SerializeField] private float minWaitTime = 10f;
     [SerializeField] private float maxWaitTime = 30f;
     
@@ -102,6 +103,9 @@ public class LeonardoSetup : MonoBehaviour
             {
                 Debug.LogWarning("No waypoint system assigned");
             }
+            
+            // Use the wait time fields to avoid warnings
+            controller.SetWaitTimes(minWaitTime, maxWaitTime);
             
             Debug.Log("LeonardoMovementController added");
         }

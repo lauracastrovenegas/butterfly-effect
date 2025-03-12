@@ -42,30 +42,54 @@ public class AICharacterController : MonoBehaviour
         serviceManager = Object.FindFirstObjectByType<ServiceManager>();
         if (serviceManager == null)
         {
+            Debug.LogError("ServiceManager not found in scene!");
             var serviceObj = new GameObject("ServiceManager");
             serviceManager = serviceObj.AddComponent<ServiceManager>();
+            Debug.LogWarning("Created new ServiceManager, but it may not be properly configured!");
+        }
+        else
+        {
+            Debug.Log("Found existing ServiceManager");
         }
 
         // Get or create VoiceSDKManager
         voiceManager = Object.FindFirstObjectByType<VoiceSDKManager>();
         if (voiceManager == null)
         {
+            Debug.LogError("VoiceSDKManager not found in scene!");
             var voiceObj = new GameObject("VoiceInput");
             voiceManager = voiceObj.AddComponent<VoiceSDKManager>();
+            Debug.LogWarning("Created new VoiceSDKManager, but it may not be properly configured!");
+        }
+        else
+        {
+            Debug.Log("Found existing VoiceSDKManager");
         }
 
         // Get components
         audioSource = GetComponent<AudioSource>();
-        animator = GetComponent<Animator>(); // Optional
+        if (audioSource == null)
+        {
+            Debug.LogError("No AudioSource component found!");
+        }
+        
+        animator = GetComponent<Animator>();
+        if (animator == null)
+        {
+            Debug.LogWarning("No Animator component found!");
+        }
     }
 
     private void SetupAudioSource()
     {
+        if (audioSource == null) return;
+        
         audioSource.spatialBlend = 1.0f;
         audioSource.spread = 60.0f;
         audioSource.rolloffMode = AudioRolloffMode.Custom;
         audioSource.maxDistance = 10.0f;
         audioSource.minDistance = 1.0f;
+        Debug.Log("AudioSource configured");
     }
 
     private void SetupUI()
@@ -73,6 +97,7 @@ public class AICharacterController : MonoBehaviour
         if (startListeningButton != null)
         {
             startListeningButton.onClick.AddListener(StartListening);
+            Debug.Log("Start Listening button configured");
         }
     }
 
@@ -85,7 +110,9 @@ public class AICharacterController : MonoBehaviour
 
         try
         {
+            Debug.Log("Starting listening async via VoiceManager");
             string transcription = await voiceManager.StartListeningAsync();
+            Debug.Log($"Received transcription: {transcription}");
             
             if (transcriptionText != null)
             {
@@ -96,10 +123,15 @@ public class AICharacterController : MonoBehaviour
             {
                 await ProcessUserInput(transcription);
             }
+            else
+            {
+                Debug.LogWarning("Empty transcription received from voice manager");
+            }
         }
         catch (System.Exception e)
         {
             Debug.LogError($"Error during voice input: {e.Message}");
+            Debug.LogError($"Stack trace: {e.StackTrace}");
         }
         finally
         {
@@ -110,25 +142,43 @@ public class AICharacterController : MonoBehaviour
 
     public async Task ProcessUserInput(string userInput)
     {
+        Debug.Log($"[AICharacterController] Processing input: {userInput}");
+        
         if (context == null)
         {
             Debug.LogError("No character context assigned!");
             return;
         }
 
+        if (serviceManager == null)
+        {
+            Debug.LogError("ServiceManager is null! Cannot process input.");
+            return;
+        }
+
         try
         {
-            await serviceManager.ProcessUserInput(userInput, transform);
+            Debug.Log($"[AICharacterController] Sending to ServiceManager");
+            var response = await serviceManager.ProcessUserInput(userInput, transform, context);
+            Debug.Log($"[AICharacterController] Response complete. Audio clip length: {(response != null ? response.length : 0)}s");
+            
+            // If we got no response, something went wrong
+            if (response == null)
+            {
+                Debug.LogError("Received null response from ServiceManager");
+            }
         }
         catch (System.Exception e)
         {
             Debug.LogError($"Error processing input: {e.Message}");
+            Debug.LogError($"Stack trace: {e.StackTrace}");
         }
     }
 
     // For testing
     public void TestWithText(string text)
     {
+        Debug.Log($"Testing with text: {text}");
         _ = ProcessUserInput(text);
     }
 

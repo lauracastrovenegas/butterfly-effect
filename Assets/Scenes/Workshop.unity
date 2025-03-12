@@ -3846,7 +3846,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   animatorController: {fileID: 9100000, guid: 211a904a7e6132046ad9063cbe85ac9c, type: 2}
-  waypointSystem: {fileID: 0}
+  waypointSystem: {fileID: 1655797307}
   addNavMeshAgent: 1
   addAnimator: 1
   addDaVinciAnimator: 1
@@ -3889,7 +3889,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 496440438ebef894487ca36098ea9e80, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  context: {fileID: 0}
+  context: {fileID: 793692679}
   transcriptionText: {fileID: 0}
   startListeningButton: {fileID: 0}
 --- !u!82 &793692681
@@ -3949,7 +3949,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0.81
+      value: 0.56
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -4006,7 +4006,7 @@ MonoBehaviour:
   movementSpeed: 1
   rotationSpeed: 100
   interactionPauseTime: 30
-  waypointSystem: {fileID: 0}
+  waypointSystem: {fileID: 1655797307}
 --- !u!114 &793692683
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8393,8 +8393,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1500090071}
-  - component: {fileID: 1500090070}
   - component: {fileID: 1500090069}
+  - component: {fileID: 1500090070}
   m_Layer: 0
   m_Name: VoiceInput
   m_TagString: Untagged
@@ -8539,6 +8539,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99cf2fa32174a3e46bbfc632109010cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  appVoiceExperience: {fileID: 1500090069}
   autoActivateVoice: 1
   enableDebugLogs: 1
   activationInterval: 5
