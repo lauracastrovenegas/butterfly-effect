@@ -7,10 +7,10 @@ public partial class LeonardoMovementController : MonoBehaviour
 {
     [Header("Movement Settings")]
     [SerializeField] private float minWaitTime = 10f;
-    [SerializeField] private float maxWaitTime = 30f;
+    [SerializeField] private float maxWaitTime = 15f;
     [SerializeField] private float movementSpeed = 1.0f;
     [SerializeField] private float rotationSpeed = 100f;
-    [SerializeField] private float interactionPauseTime = 30f;
+    [SerializeField] private float interactionPauseTime = 15f;
     [SerializeField] private float checkMovementInterval = 0.1f; // How often to check if actually moving
     
     [Header("References")]
