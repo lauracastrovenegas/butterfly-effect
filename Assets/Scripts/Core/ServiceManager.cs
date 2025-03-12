@@ -50,6 +50,10 @@ public class ServiceManager : MonoBehaviour
     
     private AudioSource musicSource;
 
+    // Debugging
+    [Header("Debug Settings")]
+    [SerializeField] private bool enableVerboseLogging = true;
+
     private void Awake()
     {
         if (Instance == null)
@@ -72,19 +76,41 @@ public class ServiceManager : MonoBehaviour
             
             geminiService = new GeminiService(configData.ApiKeys.Gemini);
             elevenLabsService = new ElevenLabsService(configData.ApiKeys.ElevenLabs, configData.VoiceConfig);
-            voiceSDKManager = gameObject.AddComponent<VoiceSDKManager>();
-            audioManager = gameObject.AddComponent<AudioManager>();
+            
+            // Try to find existing VoiceSDKManager first
+            voiceSDKManager = FindFirstObjectByType<VoiceSDKManager>();
+            if (voiceSDKManager == null)
+            {
+                LogMessage("No VoiceSDKManager found, creating new instance");
+                voiceSDKManager = gameObject.AddComponent<VoiceSDKManager>();
+            }
+            else
+            {
+                LogMessage("Found existing VoiceSDKManager");
+            }
+            
+            // Try to find existing AudioManager first
+            audioManager = FindFirstObjectByType<AudioManager>();
+            if (audioManager == null)
+            {
+                LogMessage("No AudioManager found, creating new instance");
+                audioManager = gameObject.AddComponent<AudioManager>();
+            }
+            else
+            {
+                LogMessage("Found existing AudioManager");
+            }
             
             // Setup music player
             SetupBackgroundMusic();
             
             responseCache = new ResponseCache();
 
-            Debug.Log("Services initialized successfully");
+            LogMessage("Services initialized successfully");
         }
         catch (Exception e)
         {
-            Debug.LogError($"Failed to initialize services: {e.Message}");
+            Debug.LogError($"Failed to initialize services: {e.Message}\n{e.StackTrace}");
         }
     }
 
@@ -117,65 +143,121 @@ public class ServiceManager : MonoBehaviour
         string configPath = Path.Combine(Application.streamingAssetsPath, "config.json");
         if (!File.Exists(configPath))
         {
-            throw new FileNotFoundException("Configuration file not found. Please create config.json from template.");
+            Debug.LogWarning("Configuration file not found. Creating default config for testing.");
+            configData = new ConfigData
+            {
+                ApiKeys = new ApiKeys
+                {
+                    Gemini = "YOUR_GEMINI_API_KEY", // Replace in production
+                    ElevenLabs = "YOUR_ELEVENLABS_API_KEY" // Replace in production
+                },
+                VoiceConfig = new VoiceConfig
+                {
+                    VoiceId = "pNInz6obpgDQGcFmaJgB", // default ElevenLabs voice ID
+                    Stability = 0.5f,
+                    SimilarityBoost = 0.75f
+                },
+                MusicConfig = new MusicConfig
+                {
+                    Volume = 0.3f,
+                    AutoPlay = true
+                }
+            };
+            return;
         }
 
         string jsonContent = File.ReadAllText(configPath);
         configData = JsonConvert.DeserializeObject<ConfigData>(jsonContent);
+        LogMessage("Configuration loaded successfully");
     }
 
     public async Task<AudioClip> ProcessUserInput(string userInput, Transform audioSource, CharacterContext context = null)
     {
         try
         {
+            if (string.IsNullOrEmpty(userInput))
+            {
+                LogMessage("Empty user input received, aborting", true);
+                return null;
+            }
+
+            LogMessage($"Processing user input: {userInput}");
+            
+            // Update current context if provided
             currentContext = context ?? currentContext;
             
-            // Get AI response
-            string response = await geminiService.GetResponse(userInput);
+            if (currentContext == null)
+            {
+                LogMessage("No character context available!", true);
+                return null;
+            }
+            
+            // Get AI response - pass the context to ensure correct personality
+            string response = await geminiService.GetResponse(userInput, currentContext);
+            
+            if (string.IsNullOrEmpty(response))
+            {
+                LogMessage("Empty response from Gemini API", true);
+                return null;
+            }
+            
+            LogMessage($"Received response from Gemini: {response.Substring(0, Math.Min(50, response.Length))}...");
+            
             string marker = "NORMAL";
             string cleanResponse = response;
 
-            // Parse for animation markers if we have a context
-            if (currentContext != null)
-            {
-                var parsedResponse = currentContext.ParseResponse(response);
-                marker = parsedResponse.marker;
-                cleanResponse = parsedResponse.response;
-                
-                // Trigger animation based on marker
-                OnAnimationTrigger?.Invoke(marker);
-            }
+            // Parse for animation markers
+            var parsedResponse = currentContext.ParseResponse(response);
+            marker = parsedResponse.marker;
+            cleanResponse = parsedResponse.response;
+            
+            LogMessage($"Parsed marker: [{marker}]");
+            
+            // Trigger animation based on marker
+            LogMessage($"Triggering animation: {marker}");
+            OnAnimationTrigger?.Invoke(marker);
             
             // Check cache first before generating new audio
             if (responseCache.TryGetCachedResponse(cleanResponse, out AudioClip cachedClip))
             {
-                Debug.Log($"[ServiceManager] Using cached audio clip");
+                LogMessage($"Using cached audio clip");
                 audioManager.PlaySpatialAudio(cachedClip, audioSource);
                 return cachedClip;
             }
             
             // Convert to audio using ElevenLabs - important: use cleanResponse without markers
+            LogMessage($"Generating voice for response");
             AudioClip audioClip = await elevenLabsService.GenerateVoice(cleanResponse);
 
             // Ensure audio clip was created successfully
             if (audioClip != null && audioClip.length > 0)
             {
-                Debug.Log($"[ServiceManager] Generated audio clip length: {audioClip.length}s");
+                LogMessage($"Generated audio clip length: {audioClip.length}s");
                 audioManager.PlaySpatialAudio(audioClip, audioSource);
                 responseCache.CacheResponse(cleanResponse, audioClip);
             }
             else
             {
-                Debug.LogError("[ServiceManager] Generated audio clip is invalid");
+                LogMessage("Generated audio clip is invalid", true);
             }
 
             return audioClip;
         }
         catch (Exception e)
         {
-            Debug.LogError($"[ServiceManager] Error processing user input: {e.Message}");
+            LogMessage($"Error processing user input: {e.Message}\n{e.StackTrace}", true);
             return null;
         }
+    }
+    
+    private void LogMessage(string message, bool isError = false)
+    {
+        if (!enableVerboseLogging && !isError) return;
+        
+        if (isError)
+            Debug.LogError($"[ServiceManager] {message}");
+        else
+            Debug.Log($"[ServiceManager] {message}");
     }
     
     // Music control methods

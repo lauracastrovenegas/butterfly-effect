@@ -15,6 +15,9 @@ public class VoiceSDKManager : MonoBehaviour
     [Tooltip("Drag the AppVoiceExperience component here")]
     [SerializeField] private AppVoiceExperience appVoiceExperience;
     
+    // Reference to AICharacterController - added to maintain a direct reference
+    [SerializeField] private AICharacterController characterController;
+    
     private bool isListening = false;
     private bool isActivating = false;
     private TaskCompletionSource<string> currentTranscriptionTask;
@@ -61,6 +64,20 @@ public class VoiceSDKManager : MonoBehaviour
             }
         }
 
+        // Find and cache character controller reference if not set in inspector
+        if (characterController == null)
+        {
+            characterController = FindFirstObjectByType<AICharacterController>();
+            if (characterController == null)
+            {
+                LogMessage("No AICharacterController found in scene! Character won't respond to voice.", true);
+            }
+            else
+            {
+                LogMessage("Found AICharacterController in scene");
+            }
+        }
+
         // Setup voice callbacks
         SetupVoiceCallbacks();
         
@@ -70,11 +87,20 @@ public class VoiceSDKManager : MonoBehaviour
 
     private void SetupVoiceCallbacks()
     {
+        // Check if callbacks are already registered to avoid duplicates
+        appVoiceExperience.VoiceEvents.OnStartListening.RemoveListener(OnStartedListening);
+        appVoiceExperience.VoiceEvents.OnStoppedListening.RemoveListener(OnStoppedListening);
+        appVoiceExperience.VoiceEvents.OnFullTranscription.RemoveListener(OnFullTranscriptionReceived);
+        appVoiceExperience.VoiceEvents.OnPartialTranscription.RemoveListener(OnPartialTranscriptionReceived);
+        appVoiceExperience.VoiceEvents.OnError.RemoveListener(OnError);
+        
+        // Now register them
         appVoiceExperience.VoiceEvents.OnStartListening.AddListener(OnStartedListening);
         appVoiceExperience.VoiceEvents.OnStoppedListening.AddListener(OnStoppedListening);
         appVoiceExperience.VoiceEvents.OnFullTranscription.AddListener(OnFullTranscriptionReceived);
         appVoiceExperience.VoiceEvents.OnPartialTranscription.AddListener(OnPartialTranscriptionReceived);
         appVoiceExperience.VoiceEvents.OnError.AddListener(OnError);
+        
         LogMessage("Voice callbacks set up successfully");
     }
 
@@ -264,32 +290,39 @@ public class VoiceSDKManager : MonoBehaviour
         if (string.IsNullOrEmpty(transcription))
         {
             LogMessage("WARNING: Empty transcription received!", true);
+            return; // Added return to prevent processing empty transcriptions
         }
         
-        // Automatically process transcription with character
-        if (!string.IsNullOrEmpty(transcription))
+        // Process transcription with character
+        if (characterController != null)
         {
-            var character = UnityEngine.Object.FindFirstObjectByType<AICharacterController>();
-            if (character != null)
+            LogMessage($"Sending to character: {transcription}");
+            try 
             {
-                LogMessage($"Sending to character: {transcription}");
-                // Add more debug
-                try {
-                    _ = ProcessTranscriptionAsync(character, transcription);
-                    LogMessage("Successfully started processing transcription");
-                }
-                catch (System.Exception ex) {
-                    LogMessage($"ERROR in processing: {ex.Message}", true);
-                }
+                // Changed to properly await the task
+                ProcessTranscriptionAsync(characterController, transcription).ConfigureAwait(false);
+                LogMessage("Successfully started processing transcription");
             }
-            else
+            catch (Exception ex) 
             {
-                LogMessage("No AICharacterController found", true);
+                LogMessage($"ERROR in processing: {ex.Message}", true);
+                LogMessage($"Stack trace: {ex.StackTrace}", true);
+            }
+        }
+        else
+        {
+            LogMessage("No AICharacterController found", true);
+            // Try to find character controller again as a last resort
+            characterController = FindFirstObjectByType<AICharacterController>();
+            if (characterController != null)
+            {
+                LogMessage("Found AICharacterController, attempting to process transcription");
+                ProcessTranscriptionAsync(characterController, transcription).ConfigureAwait(false);
             }
         }
     }
 
-    // New helper method to handle the async operation properly
+    // Modified to ensure proper async handling
     private async Task ProcessTranscriptionAsync(AICharacterController character, string transcription)
     {
         try
@@ -322,7 +355,7 @@ public class VoiceSDKManager : MonoBehaviour
         isListening = false;
     }
 
-    private void LogMessage(string message, bool isError = false)
+    public void LogMessage(string message, bool isError = false)
     {
         if (!enableDebugLogs) return;
         

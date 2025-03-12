@@ -13,6 +13,9 @@ public class AICharacterController : MonoBehaviour
     [Header("Optional Debug UI")]
     public TextMeshProUGUI transcriptionText;
     public Button startListeningButton;
+    
+    [Header("Debug Settings")]
+    [SerializeField] private bool enableDebugLogging = true;
 
     // Core services
     private ServiceManager serviceManager;
@@ -20,13 +23,14 @@ public class AICharacterController : MonoBehaviour
     private AudioSource audioSource;
     private Animator animator;
     private bool isListening = false;
+    private bool isProcessing = false;  // Added to prevent overlapping processing
 
     private void Start()
     {
         // Validate context
         if (context == null)
         {
-            Debug.LogError("No CharacterContext assigned to AICharacterController!");
+            LogMessage("No CharacterContext assigned to AICharacterController!", true);
             enabled = false;
             return;
         }
@@ -39,44 +43,46 @@ public class AICharacterController : MonoBehaviour
     private void InitializeServices()
     {
         // Get or create ServiceManager
-        serviceManager = Object.FindFirstObjectByType<ServiceManager>();
+        serviceManager = FindFirstObjectByType<ServiceManager>();
         if (serviceManager == null)
         {
-            Debug.LogError("ServiceManager not found in scene!");
+            LogMessage("ServiceManager not found in scene!", true);
             var serviceObj = new GameObject("ServiceManager");
             serviceManager = serviceObj.AddComponent<ServiceManager>();
-            Debug.LogWarning("Created new ServiceManager, but it may not be properly configured!");
+            LogMessage("Created new ServiceManager, but it may not be properly configured!", true);
         }
         else
         {
-            Debug.Log("Found existing ServiceManager");
+            LogMessage("Found existing ServiceManager");
         }
 
         // Get or create VoiceSDKManager
-        voiceManager = Object.FindFirstObjectByType<VoiceSDKManager>();
+        voiceManager = FindFirstObjectByType<VoiceSDKManager>();
         if (voiceManager == null)
         {
-            Debug.LogError("VoiceSDKManager not found in scene!");
+            LogMessage("VoiceSDKManager not found in scene!", true);
             var voiceObj = new GameObject("VoiceInput");
             voiceManager = voiceObj.AddComponent<VoiceSDKManager>();
-            Debug.LogWarning("Created new VoiceSDKManager, but it may not be properly configured!");
+            LogMessage("Created new VoiceSDKManager, but it may not be properly configured!", true);
         }
         else
         {
-            Debug.Log("Found existing VoiceSDKManager");
+            LogMessage("Found existing VoiceSDKManager");
         }
 
         // Get components
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
         {
-            Debug.LogError("No AudioSource component found!");
+            LogMessage("No AudioSource component found!", true);
+            audioSource = gameObject.AddComponent<AudioSource>();
+            LogMessage("Added AudioSource component");
         }
         
         animator = GetComponent<Animator>();
         if (animator == null)
         {
-            Debug.LogWarning("No Animator component found!");
+            LogMessage("No Animator component found, animations will not work", true);
         }
     }
 
@@ -89,30 +95,36 @@ public class AICharacterController : MonoBehaviour
         audioSource.rolloffMode = AudioRolloffMode.Custom;
         audioSource.maxDistance = 10.0f;
         audioSource.minDistance = 1.0f;
-        Debug.Log("AudioSource configured");
+        LogMessage("AudioSource configured");
     }
 
     private void SetupUI()
     {
         if (startListeningButton != null)
         {
+            // Remove existing listeners to avoid duplicates
+            startListeningButton.onClick.RemoveAllListeners();
             startListeningButton.onClick.AddListener(StartListening);
-            Debug.Log("Start Listening button configured");
+            LogMessage("Start Listening button configured");
         }
     }
 
     public async void StartListening()
     {
-        if (isListening) return;
+        if (isListening) 
+        {
+            LogMessage("Already listening, ignoring request");
+            return;
+        }
 
         isListening = true;
         if (startListeningButton != null) startListeningButton.interactable = false;
 
         try
         {
-            Debug.Log("Starting listening async via VoiceManager");
+            LogMessage("Starting listening async via VoiceManager");
             string transcription = await voiceManager.StartListeningAsync();
-            Debug.Log($"Received transcription: {transcription}");
+            LogMessage($"Received transcription: {transcription}");
             
             if (transcriptionText != null)
             {
@@ -125,13 +137,13 @@ public class AICharacterController : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("Empty transcription received from voice manager");
+                LogMessage("Empty transcription received from voice manager", true);
             }
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"Error during voice input: {e.Message}");
-            Debug.LogError($"Stack trace: {e.StackTrace}");
+            LogMessage($"Error during voice input: {e.Message}", true);
+            LogMessage($"Stack trace: {e.StackTrace}", true);
         }
         finally
         {
@@ -142,44 +154,83 @@ public class AICharacterController : MonoBehaviour
 
     public async Task ProcessUserInput(string userInput)
     {
-        Debug.Log($"[AICharacterController] Processing input: {userInput}");
+        // Prevent overlapping processing
+        if (isProcessing)
+        {
+            LogMessage("Already processing input, queuing is not implemented yet", true);
+            return;
+        }
+
+        isProcessing = true;
         
-        if (context == null)
-        {
-            Debug.LogError("No character context assigned!");
-            return;
-        }
-
-        if (serviceManager == null)
-        {
-            Debug.LogError("ServiceManager is null! Cannot process input.");
-            return;
-        }
-
         try
         {
-            Debug.Log($"[AICharacterController] Sending to ServiceManager");
-            var response = await serviceManager.ProcessUserInput(userInput, transform, context);
-            Debug.Log($"[AICharacterController] Response complete. Audio clip length: {(response != null ? response.length : 0)}s");
+            LogMessage($"Processing input: {userInput}");
             
-            // If we got no response, something went wrong
-            if (response == null)
+            if (string.IsNullOrWhiteSpace(userInput))
             {
-                Debug.LogError("Received null response from ServiceManager");
+                LogMessage("Empty input received, ignoring", true);
+                return;
+            }
+            
+            if (context == null)
+            {
+                LogMessage("No character context assigned!", true);
+                return;
+            }
+
+            if (serviceManager == null)
+            {
+                LogMessage("ServiceManager is null! Cannot process input.", true);
+                // Try to find it again as a last resort
+                serviceManager = FindFirstObjectByType<ServiceManager>();
+                if (serviceManager == null)
+                {
+                    LogMessage("Still cannot find ServiceManager after retry", true);
+                    return;
+                }
+                LogMessage("Found ServiceManager on retry");
+            }
+
+            // Log before sending to ServiceManager
+            LogMessage($"Sending to ServiceManager");
+            var response = await serviceManager.ProcessUserInput(userInput, transform, context);
+            
+            if (response != null)
+            {
+                LogMessage($"Response complete. Audio clip length: {response.length}s");
+            }
+            else
+            {
+                LogMessage("Received null response from ServiceManager", true);
             }
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"Error processing input: {e.Message}");
-            Debug.LogError($"Stack trace: {e.StackTrace}");
+            LogMessage($"Error processing input: {e.Message}", true);
+            LogMessage($"Stack trace: {e.StackTrace}", true);
+        }
+        finally
+        {
+            isProcessing = false;
         }
     }
 
     // For testing
     public void TestWithText(string text)
     {
-        Debug.Log($"Testing with text: {text}");
+        LogMessage($"Testing with text: {text}");
         _ = ProcessUserInput(text);
+    }
+    
+    private void LogMessage(string message, bool isError = false)
+    {
+        if (!enableDebugLogging && !isError) return;
+        
+        if (isError)
+            Debug.LogError($"[AICharacterController] {message}");
+        else
+            Debug.Log($"[AICharacterController] {message}");
     }
 
     private void OnDestroy()
