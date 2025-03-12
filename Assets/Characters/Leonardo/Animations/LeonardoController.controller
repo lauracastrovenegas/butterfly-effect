@@ -217,8 +217,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac62bc2805da5a6478acf3f3d4eb8586, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  triggerDelay: 0.1
-  forceImmediate: 1
+  timeoutDuration: 0.2
 --- !u!1107 &-1091706687802019138
 AnimatorStateMachine:
   serializedVersion: 6
