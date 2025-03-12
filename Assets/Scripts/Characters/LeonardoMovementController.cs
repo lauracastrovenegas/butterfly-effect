@@ -11,6 +11,7 @@ public partial class LeonardoMovementController : MonoBehaviour
     [SerializeField] private float movementSpeed = 1.0f;
     [SerializeField] private float rotationSpeed = 100f;
     [SerializeField] private float interactionPauseTime = 30f;
+    [SerializeField] private float checkMovementInterval = 0.1f; // How often to check if actually moving
     
     [Header("References")]
     [SerializeField] private WaypointSystem waypointSystem;
@@ -21,6 +22,8 @@ public partial class LeonardoMovementController : MonoBehaviour
     private bool isMoving = false;
     private bool isInteracting = false;
     private bool isPaused = false;
+    private Vector3 lastPosition;
+    private float movementThreshold = 0.01f; // Minimum distance to consider as moving
     
     private void Start()
     {
@@ -39,6 +42,9 @@ public partial class LeonardoMovementController : MonoBehaviour
         navAgent.speed = movementSpeed;
         navAgent.angularSpeed = rotationSpeed;
         navAgent.stoppingDistance = 0.5f;
+        
+        // Store initial position
+        lastPosition = transform.position;
         
         // Try to find waypoint system if not assigned
         if (waypointSystem == null)
@@ -59,6 +65,40 @@ public partial class LeonardoMovementController : MonoBehaviour
         
         // Start movement routine
         StartCoroutine(MovementRoutine());
+        
+        // Start continuous movement check for animation
+        StartCoroutine(ContinuousMovementCheck());
+    }
+    
+    // New coroutine to continuously check if actually moving
+    private IEnumerator ContinuousMovementCheck()
+    {
+        WaitForSeconds wait = new WaitForSeconds(checkMovementInterval);
+        
+        while (true)
+        {
+            // Check if actually moving by comparing positions
+            float distanceMoved = Vector3.Distance(transform.position, lastPosition);
+            bool actuallyMoving = distanceMoved > movementThreshold;
+            
+            // If we're supposed to be moving but not actually moving, make sure animation is correct
+            if (isMoving != actuallyMoving)
+            {
+                isMoving = actuallyMoving;
+                
+                // Update animation state
+                if (animator != null)
+                {
+                    animator.SetWalking(isMoving);
+                    Debug.Log($"Movement status updated: {(isMoving ? "Walking" : "Stopped")}");
+                }
+            }
+            
+            // Update last position
+            lastPosition = transform.position;
+            
+            yield return wait;
+        }
     }
     
     private IEnumerator MovementRoutine()
@@ -118,6 +158,7 @@ public partial class LeonardoMovementController : MonoBehaviour
         if (animator != null)
         {
             animator.SetWalking(true);
+            Debug.Log("Setting walking animation to TRUE");
         }
     }
     
@@ -129,6 +170,7 @@ public partial class LeonardoMovementController : MonoBehaviour
         if (animator != null)
         {
             animator.SetWalking(false);
+            Debug.Log("Setting walking animation to FALSE");
         }
     }
     
@@ -187,6 +229,9 @@ public partial class LeonardoMovementController : MonoBehaviour
         
         // Restart the movement routine after we arrive
         StartCoroutine(ResumeRoutineAfterArrival());
+        
+        // Also restart the movement check
+        StartCoroutine(ContinuousMovementCheck());
     }
     
     private IEnumerator ResumeRoutineAfterArrival()
@@ -213,6 +258,9 @@ public partial class LeonardoMovementController : MonoBehaviour
         {
             ServiceManager.Instance.OnAnimationTrigger -= HandleAnimationMarker;
         }
+        
+        // Stop all coroutines
+        StopAllCoroutines();
     } 
 }
 

@@ -217,6 +217,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac62bc2805da5a6478acf3f3d4eb8586, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  triggerDelay: 0.1
+  forceImmediate: 1
 --- !u!1107 &-1091706687802019138
 AnimatorStateMachine:
   serializedVersion: 6
@@ -432,7 +434,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: -203655887218126122, guid: 9edc88222662ee84591c9a2218d7e7e8, type: 3}
+  m_Motion: {fileID: -203655887218126122, guid: 27809fc322bc9634f8659561040d13d6, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
