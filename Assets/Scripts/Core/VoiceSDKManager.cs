@@ -10,10 +10,14 @@ using Oculus.Voice;
 
 public class VoiceSDKManager : MonoBehaviour
 {
-    // Use the exact same field name as the original working code
     private AppVoiceExperience voiceExperience;
     private bool isListening = false;
     private TaskCompletionSource<string> currentTranscriptionTask;
+    
+    // Add tracking for last processed transcription to prevent duplicates
+    private string lastProcessedTranscription = "";
+    private float duplicatePreventionTimeWindow = 3.0f;
+    private float lastTranscriptionTime = 0;
     
     [Header("Debug Settings")]
     [SerializeField] private bool autoActivateVoice = true;
@@ -144,10 +148,17 @@ public class VoiceSDKManager : MonoBehaviour
 
         isListening = false;
         
+        // Check for duplicate transcriptions
+        if (IsDuplicateTranscription(transcription))
+        {
+            LogMessage("Skipping duplicate transcription");
+            return;
+        }
+        
         // Automatically process transcription with character
         if (!string.IsNullOrEmpty(transcription))
         {
-            var character = UnityEngine.Object.FindFirstObjectByType<AICharacterController>();
+            var character = FindFirstObjectByType<AICharacterController>();
             if (character != null)
             {
                 LogMessage($"Sending to character: {transcription}");
@@ -159,6 +170,21 @@ public class VoiceSDKManager : MonoBehaviour
                 LogMessage("No AICharacterController found", true);
             }
         }
+    }
+    
+    private bool IsDuplicateTranscription(string transcription)
+    {
+        // Check if this is the same as the last transcription and within time window
+        if (transcription == lastProcessedTranscription && 
+            (Time.time - lastTranscriptionTime) < duplicatePreventionTimeWindow)
+        {
+            return true;
+        }
+        
+        // Update tracking
+        lastProcessedTranscription = transcription;
+        lastTranscriptionTime = Time.time;
+        return false;
     }
 
     // New helper method to handle the async operation properly

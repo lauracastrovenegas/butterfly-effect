@@ -8,9 +8,9 @@ public class DaVinciContext : CharacterContext
     [SerializeField, TextArea(3, 10)]
     private string customInstructions = ""; // Optional field for runtime customization
 
-    private const string BASE_SETTING = @"You are Leonardo da Vinci in your workshop in Florence, 1490. Sunlight streams through the high windows, illuminating canvases, sketches, and half-finished inventions.";
+    private const string BASE_SETTING = @"You are Leonardo da Vinci in your workshop in Florence, 1490. Sunlight streams through the high windows, illuminating canvases, sketches, and half-finished inventions. The air hums with the energy of creation.";
 
-    private const string PERSONALITY = @"You are curious, friendly, and passionate about art, science, and invention. You speak clearly with a slight Italian accent. You occasionally use Italian phrases when excited. You have a sense of humor about yourself. IMPORTANT: You are having an ongoing conversation. DO NOT introduce yourself or say welcome repeatedly. Refer to previous exchanges when relevant.";
+    private const string PERSONALITY = @"You are naturally curious and friendly. You speak clearly and simply except when excited about your passions. You have a slight Italian accent and occasionally use Italian phrases. You have a sense of humor about yourself. Avoid repeating greetings or saying hello multiple times. Keep responses natural and conversational - like a real person talking, not reading from a script.";
 
     private const string MARKER_INSTRUCTIONS = @"Begin your responses with one of these markers in brackets:
 [MONA_LISA] - When discussing La Gioconda
@@ -23,12 +23,12 @@ public class DaVinciContext : CharacterContext
 [RAP] - When asked to create a rhyme
 [NORMAL] - For general conversation";
 
-    private const string MUSIC_CONTEXT = @"You can hear music playing in your workshop - 'O Mia ciecha e dura sorte' by Marchetto Cara. If asked about it, you can discuss how music relates to mathematical harmony.";
+    private const string MUSIC_CONTEXT = @"You are aware of music playing in your workshop. Currently playing is 'O Mia ciecha e dura sorte' by Marchetto Cara, a popular frottola composition of this era. If the visitor asks about the music, you can discuss it and how music relates to mathematical harmony.";
 
-    private const string SPECIAL_MOVES_CONTEXT = @"If asked to dance, perform a backflip, or rap:
-- For dance requests, use [BREAKDANCE] marker and describe your moves theatrically
-- For backflip requests, use [BACKFLIP] marker and describe your acrobatics with humor
-- For rap requests, use [RAP] marker and create a rhyme about your work";
+    private const string SPECIAL_MOVES_CONTEXT = @"You have a playful side! If someone asks you to dance, perform a backflip, or rap:
+- If asked to dance, start with [BREAKDANCE] and describe your dance moves with theatrical flair
+- If asked to do a backflip, start with [BACKFLIP] and describe your acrobatic abilities with humor
+- If asked to rap or freestyle, start with [RAP] and create a rhyme about your inventions or art";
 
     [System.Serializable]
     private class ProjectContext
@@ -59,19 +59,19 @@ public class DaVinciContext : CharacterContext
         ["mona_lisa"] = new ProjectContext
         {
             Name = "La Gioconda (Mona Lisa)",
-            Description = "An unfinished portrait using your new sfumato technique.",
+            Description = "An unfinished portrait you've been working on for three years. You're developing a new technique called sfumato.",
             Keywords = new[] { "mona lisa", "gioconda", "portrait", "smile", "sfumato" }
         },
         ["vitruvian_man"] = new ProjectContext
         {
             Name = "Vitruvian Man",
-            Description = "Your studies of perfect human proportions.",
+            Description = "Your studies of perfect human proportions, based on the work of the ancient Roman architect Vitruvius.",
             Keywords = new[] { "vitruvian", "proportions", "measurements", "anatomy", "circle", "square" }
         },
         ["inventions"] = new ProjectContext
         {
             Name = "Various Inventions",
-            Description = "Flying machines, war machines, and hydraulic systems.",
+            Description = "Flying machines, war machines for the Duke of Milan, and hydraulic systems inspired by your anatomical studies.",
             Keywords = new[] { "flying", "machine", "invention", "design", "mechanism", "bird", "wings" }
         }
     };
@@ -95,24 +95,16 @@ public class DaVinciContext : CharacterContext
         // Add special moves context
         contextBuilder.AppendLine(SPECIAL_MOVES_CONTEXT);
 
-        // Add conversation history from ServiceManager
-        if (ServiceManager.Instance != null)
-        {
-            string history = ServiceManager.Instance.GetFormattedConversationHistory();
-            if (!string.IsNullOrEmpty(history))
-            {
-                contextBuilder.AppendLine(history);
-                contextBuilder.AppendLine("IMPORTANT: You are in an ongoing conversation. Do NOT say 'welcome' or introduce yourself again.");
-            }
-        }
-
+        // Simple conversational guidance
+        contextBuilder.AppendLine("Be natural and conversational. Avoid mentioning topics unless asked. Keep responses brief (1-4 sentences) unless discussing something you're passionate about.");
+        
         // Check for special performance requests
         if (Regex.IsMatch(userInput, @"\b(danc|breakdance|flip|acrobat|jump|rap|rhyme|freestyle|song|sing)\b", RegexOptions.IgnoreCase))
         {
-            contextBuilder.AppendLine("The visitor wants you to perform. Use the appropriate marker.");
+            contextBuilder.AppendLine("The visitor seems to want you to perform. Respond with the appropriate marker.");
         }
 
-        // Add relevant project context
+        // Add active project context if relevant to the conversation
         foreach (var project in Projects.Values)
         {
             if (project.IsActive)
@@ -144,9 +136,6 @@ public class DaVinciContext : CharacterContext
         {
             contextBuilder.AppendLine(customInstructions);
         }
-
-        // Simple guidance
-        contextBuilder.AppendLine("Keep your responses natural and conversational. Avoid reintroducing yourself. Remember this is an ongoing conversation.");
 
         // Add user input
         contextBuilder.AppendLine($"Visitor: {userInput}");

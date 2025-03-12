@@ -3,7 +3,7 @@ using System;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.IO;
-using System.Collections.Generic;
+using System.Collections;
 
 public class ServiceManager : MonoBehaviour
 {
@@ -13,24 +13,14 @@ public class ServiceManager : MonoBehaviour
     public delegate void AnimationTriggerHandler(string marker);
     public event AnimationTriggerHandler OnAnimationTrigger;
     
-    [Header("Debug Settings")]
-    [SerializeField] private bool debugMode = true;
-    
-    [Header("Voice Settings")]
-    [SerializeField] private float voiceVolume = 1.0f;
-    
-    [Header("Conversation Memory")]
-    [SerializeField] private int conversationMemoryItems = 3;
-    [SerializeField] private bool enableConversationMemory = true;
-    
-    // Services
     private GeminiService geminiService;
     private ElevenLabsService elevenLabsService;
-    private DirectAudioManager audioManager;
+    private VoiceSDKManager voiceSDKManager;
+    private AudioManager audioManager;
     private CharacterContext currentContext;
     
-    // Memory for conversation context
-    private List<(string userInput, string aiResponse)> conversationHistory = new List<(string userInput, string aiResponse)>();
+    // Flag to track initialization status
+    public bool IsInitialized { get; private set; } = false;
     
     [Serializable]
     private class ConfigData
@@ -47,54 +37,97 @@ public class ServiceManager : MonoBehaviour
     }
     
     private ConfigData configData;
+    private ResponseCache responseCache;
     
     private void Awake()
     {
+        Debug.Log("[ServiceManager] Awake called");
         if (Instance == null)
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            InitializeServices();
+            StartCoroutine(InitializeServicesCoroutine());
         }
-        else
+        else if (Instance != this)
         {
+            Debug.Log("[ServiceManager] Destroying duplicate ServiceManager");
             Destroy(gameObject);
         }
     }
+
+    private IEnumerator InitializeServicesCoroutine()
+    {
+        yield return null; // Wait one frame
+        Initialize();
+    }
     
-    private void InitializeServices()
+    // Public method to force initialization and allow for delayed init
+    public void Initialize()
     {
         try
         {
-            LogMessage("Initializing services...");
+            Debug.Log("[ServiceManager] Initialize method called");
+            
+            // Exit if already initialized
+            if (IsInitialized)
+            {
+                Debug.Log("[ServiceManager] Already initialized");
+                return;
+            }
             
             LoadConfiguration();
             
-            // Initialize DirectAudioManager (simplest audio implementation)
-            audioManager = GetComponent<DirectAudioManager>();
+            try 
+            {
+                geminiService = new GeminiService(configData.ApiKeys.Gemini);
+                Debug.Log("[ServiceManager] GeminiService initialized");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[ServiceManager] Failed to initialize GeminiService: {e.Message}");
+            }
+            
+            try
+            {
+                elevenLabsService = new ElevenLabsService(configData.ApiKeys.ElevenLabs, configData.VoiceConfig);
+                Debug.Log("[ServiceManager] ElevenLabsService initialized");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[ServiceManager] Failed to initialize ElevenLabsService: {e.Message}");
+            }
+            
+            // Instead of adding components, find existing ones first
+            voiceSDKManager = FindFirstObjectByType<VoiceSDKManager>();
+            if (voiceSDKManager == null)
+            {
+                voiceSDKManager = gameObject.AddComponent<VoiceSDKManager>();
+                Debug.Log("[ServiceManager] Created VoiceSDKManager component");
+            }
+            else
+            {
+                Debug.Log("[ServiceManager] Found existing VoiceSDKManager");
+            }
+            
+            audioManager = FindFirstObjectByType<AudioManager>();
             if (audioManager == null)
             {
-                audioManager = gameObject.AddComponent<DirectAudioManager>();
-                LogMessage("Created DirectAudioManager component");
+                audioManager = gameObject.AddComponent<AudioManager>();
+                Debug.Log("[ServiceManager] Created AudioManager component");
             }
-            
-            // Initialize API services
-            geminiService = new GeminiService(configData.ApiKeys.Gemini);
-            elevenLabsService = new ElevenLabsService(configData.ApiKeys.ElevenLabs, configData.VoiceConfig);
-            
-            // Add SimpleMusicPlayer if not already present
-            var musicPlayer = GetComponent<SimpleMusicPlayer>();
-            if (musicPlayer == null)
+            else
             {
-                musicPlayer = gameObject.AddComponent<SimpleMusicPlayer>();
-                LogMessage("Added SimpleMusicPlayer component");
+                Debug.Log("[ServiceManager] Found existing AudioManager");
             }
             
-            LogMessage("Services initialized successfully");
+            responseCache = new ResponseCache();
+            
+            IsInitialized = true;
+            Debug.Log("[ServiceManager] Services initialized successfully");
         }
         catch (Exception e)
         {
-            LogMessage($"Failed to initialize services: {e.Message}", true);
+            Debug.LogError($"[ServiceManager] Failed to initialize services: {e.Message}\n{e.StackTrace}");
         }
     }
     
@@ -105,17 +138,17 @@ public class ServiceManager : MonoBehaviour
             string configPath = Path.Combine(Application.streamingAssetsPath, "config.json");
             if (!File.Exists(configPath))
             {
-                LogMessage("Configuration file not found. Creating default config.", true);
-                configData = new ConfigData()
+                Debug.LogWarning("[ServiceManager] Configuration file not found. Creating default config.");
+                configData = new ConfigData
                 {
                     ApiKeys = new ApiKeys
                     {
-                        Gemini = "YOUR_API_KEY",
-                        ElevenLabs = "YOUR_API_KEY"
+                        Gemini = "YOUR_GEMINI_API_KEY", // Default value
+                        ElevenLabs = "YOUR_ELEVENLABS_API_KEY" // Default value
                     },
                     VoiceConfig = new VoiceConfig
                     {
-                        VoiceId = "pNInz6obpgDQGcFmaJgB",
+                        VoiceId = "pNInz6obpgDQGcFmaJgB", // Default voice ID
                         Stability = 0.5f,
                         SimilarityBoost = 0.75f
                     }
@@ -125,13 +158,13 @@ public class ServiceManager : MonoBehaviour
             
             string jsonContent = File.ReadAllText(configPath);
             configData = JsonConvert.DeserializeObject<ConfigData>(jsonContent);
-            LogMessage("Configuration loaded successfully");
+            Debug.Log("[ServiceManager] Configuration loaded successfully");
         }
         catch (Exception e)
         {
-            LogMessage($"Error loading configuration: {e.Message}", true);
+            Debug.LogError($"[ServiceManager] Error loading configuration: {e.Message}");
             // Create default config as fallback
-            configData = new ConfigData()
+            configData = new ConfigData
             {
                 ApiKeys = new ApiKeys
                 {
@@ -150,30 +183,31 @@ public class ServiceManager : MonoBehaviour
     
     public async Task<AudioClip> ProcessUserInput(string userInput, Transform audioSource, CharacterContext context = null)
     {
-        if (string.IsNullOrWhiteSpace(userInput))
-        {
-            LogMessage("Empty user input, ignoring request", true);
-            return null;
-        }
-        
-        LogMessage($"Processing user input: '{userInput}'");
-        
         try
         {
-            // Store the context if provided
+            // Check if initialized
+            if (!IsInitialized)
+            {
+                Debug.LogWarning("[ServiceManager] Not fully initialized yet, initializing now");
+                Initialize();
+            }
+            
+            Debug.Log($"[ServiceManager] Processing user input: {userInput}");
+            
             currentContext = context ?? currentContext;
             
-            // Include conversation history for context
-            string prompt = CreatePromptWithHistory(userInput, currentContext);
+            if (geminiService == null)
+            {
+                Debug.LogError("[ServiceManager] GeminiService is null!");
+                return null;
+            }
             
-            // Get AI response from Gemini
+            // Get AI response
             string response = await geminiService.GetResponse(userInput);
-            LogMessage($"Received response from Gemini: '{response}'");
-            
-            // Parse for animation markers
             string marker = "NORMAL";
             string cleanResponse = response;
             
+            // Parse for animation markers if we have a context
             if (currentContext != null)
             {
                 var parsedResponse = currentContext.ParseResponse(response);
@@ -181,109 +215,81 @@ public class ServiceManager : MonoBehaviour
                 cleanResponse = parsedResponse.response;
                 
                 // Trigger animation based on marker
-                LogMessage($"Animation marker: [{marker}]");
                 OnAnimationTrigger?.Invoke(marker);
+                Debug.Log($"[ServiceManager] Triggered animation: {marker}");
             }
             
-            // Store in conversation history
-            AddToConversationHistory(userInput, cleanResponse);
+            // Check if ElevenLabs is available
+            if (elevenLabsService == null)
+            {
+                Debug.LogError("[ServiceManager] ElevenLabsService is null!");
+                return null;
+            }
             
-            // Generate audio using ElevenLabs
-            LogMessage("Generating voice audio...");
+            // Check cache first before generating new audio
+            if (responseCache != null && responseCache.TryGetCachedResponse(cleanResponse, out AudioClip cachedClip))
+            {
+                Debug.Log($"[ServiceManager] Using cached audio clip");
+                if (audioManager != null)
+                {
+                    audioManager.PlaySpatialAudio(cachedClip, audioSource);
+                }
+                return cachedClip;
+            }
+            
+            // Convert to audio using ElevenLabs - important: use cleanResponse without markers
+            Debug.Log("[ServiceManager] Generating voice audio...");
             AudioClip audioClip = await elevenLabsService.GenerateVoice(cleanResponse);
             
-            // Play the audio
+            // Ensure audio clip was created successfully
             if (audioClip != null && audioClip.length > 0)
             {
-                LogMessage($"Playing audio, length: {audioClip.length}s");
+                Debug.Log($"[ServiceManager] Generated audio clip length: {audioClip.length}s");
                 if (audioManager != null)
                 {
                     audioManager.PlaySpatialAudio(audioClip, audioSource);
                 }
                 else
                 {
-                    LogMessage("AudioManager is null, cannot play audio", true);
+                    Debug.LogError("[ServiceManager] AudioManager is null!");
+                }
+                
+                if (responseCache != null)
+                {
+                    responseCache.CacheResponse(cleanResponse, audioClip);
                 }
             }
             else
             {
-                LogMessage("Generated audio clip is invalid", true);
+                Debug.LogError("[ServiceManager] Generated audio clip is invalid");
             }
             
             return audioClip;
         }
         catch (Exception e)
         {
-            LogMessage($"Error processing user input: {e.Message}", true);
+            Debug.LogError($"[ServiceManager] Error processing user input: {e.Message}\n{e.StackTrace}");
             return null;
         }
     }
     
-    private string CreatePromptWithHistory(string userInput, CharacterContext context)
+    // Help with debugging
+    private void OnEnable()
     {
-        if (context == null || !enableConversationMemory || conversationHistory.Count == 0)
-        {
-            return userInput;
-        }
-        
-        // Create a context with history for DaVinciContext
-        var davinci = context as DaVinciContext;
-        if (davinci != null)
-        {
-            // Context will be handled by DaVinciContext
-            return userInput;
-        }
-        
-        // For other context types, we might need to format the history differently
-        return userInput;
+        Debug.Log("[ServiceManager] OnEnable called");
     }
     
-    private void AddToConversationHistory(string userInput, string aiResponse)
+    private void OnDisable()
     {
-        if (!enableConversationMemory) return;
-        
-        // Add the new exchange
-        conversationHistory.Add((userInput, aiResponse));
-        
-        // Trim to keep only the most recent exchanges
-        while (conversationHistory.Count > conversationMemoryItems)
-        {
-            conversationHistory.RemoveAt(0);
-        }
-        
-        LogMessage($"Added conversation exchange. History now contains {conversationHistory.Count} items.");
+        Debug.Log("[ServiceManager] OnDisable called");
     }
     
-    public string GetFormattedConversationHistory()
+    private void OnDestroy()
     {
-        if (!enableConversationMemory || conversationHistory.Count == 0)
+        Debug.Log("[ServiceManager] OnDestroy called");
+        if (Instance == this)
         {
-            return string.Empty;
-        }
-        
-        var builder = new System.Text.StringBuilder();
-        builder.AppendLine("\nRecent conversation history:");
-        
-        foreach (var exchange in conversationHistory)
-        {
-            builder.AppendLine($"Visitor: {exchange.userInput}");
-            builder.AppendLine($"Leonardo: {exchange.aiResponse}\n");
-        }
-        
-        return builder.ToString();
-    }
-    
-    private void LogMessage(string message, bool isError = false)
-    {
-        if (!debugMode && !isError) return;
-        
-        if (isError)
-        {
-            Debug.LogError($"[ServiceManager] {message}");
-        }
-        else
-        {
-            Debug.Log($"[ServiceManager] {message}");
+            Instance = null;
         }
     }
 }

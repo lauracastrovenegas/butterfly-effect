@@ -90,7 +90,8 @@ public class AICharacterController : MonoBehaviour
                     Debug.LogError("ServiceManager still not found after delayed initialization!");
                     var serviceObj = new GameObject("ServiceManager");
                     serviceManager = serviceObj.AddComponent<ServiceManager>();
-                    // Wait for initialization to happen automatically (via Awake)
+                    // Wait for initialization
+                    serviceManager.Initialize();
                     Debug.Log("Created new ServiceManager during initialization");
                 }
             }
