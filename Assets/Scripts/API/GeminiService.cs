@@ -11,8 +11,7 @@ public class GeminiService
     private readonly HttpClient client;
     private readonly string apiKey;
     private readonly string baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-    
-    // Removed instantiation of DaVinciContext - will use the provided context instead
+    private readonly DaVinciContext context;
 
     public GeminiService(string apiKey)
     {
@@ -25,20 +24,15 @@ public class GeminiService
         Debug.Log($"[GeminiService] Initializing with API key length: {apiKey.Length}");
         this.apiKey = apiKey;
         client = new HttpClient();
+        context = new DaVinciContext();
         client.Timeout = TimeSpan.FromSeconds(30);
     }
 
-    public async Task<string> GetResponse(string userInput, CharacterContext context = null)
+    public async Task<string> GetResponse(string userInput)
     {
         try
         {
             Debug.Log($"[GeminiService] Processing input: {userInput}");
-
-            if (context == null)
-            {
-                Debug.LogWarning("[GeminiService] No context provided, response may lack character personality");
-                return "I'm sorry, I'm having trouble finding my character at the moment.";
-            }
 
             var prompt = context.get_prompt_context(userInput, new Dictionary<string, object>
             {
@@ -70,14 +64,8 @@ public class GeminiService
             };
 
             var json = JsonConvert.SerializeObject(requestBody);
-            // Log only part of the API key for security
             Debug.Log($"[GeminiService] Request URL: {baseUrl}?key={apiKey.Substring(0, 4)}...");
-            
-            // For detailed debugging (disable in production)
-            if (Debug.isDebugBuild)
-            {
-                Debug.Log($"[GeminiService] Request body: {json}");
-            }
+            Debug.Log($"[GeminiService] Request body: {json}");
 
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             var url = $"{baseUrl}?key={apiKey}";
@@ -87,18 +75,9 @@ public class GeminiService
             
             Debug.Log($"[GeminiService] Response status: {response.StatusCode}");
             
-            // For detailed debugging (disable in production)
-            if (Debug.isDebugBuild)
-            {
-                Debug.Log($"[GeminiService] Response headers: {string.Join(", ", response.Headers)}");
-                Debug.Log($"[GeminiService] Response content: {responseContent}");
-            }
-
             if (response.IsSuccessStatusCode)
             {
-                string parsedResponse = ParseGeminiResponse(responseContent);
-                Debug.Log($"[GeminiService] Parsed response: {parsedResponse.Substring(0, Math.Min(50, parsedResponse.Length))}...");
-                return parsedResponse;
+                return ParseGeminiResponse(responseContent);
             }
             else
             {
@@ -125,14 +104,7 @@ public class GeminiService
                 response.candidates[0].content.parts.Length > 0)
             {
                 var result = response.candidates[0].content.parts[0].text;
-                
-                // If the response doesn't have a marker, add the default [NORMAL] marker
-                if (!result.TrimStart().StartsWith("["))
-                {
-                    result = "[NORMAL] " + result;
-                    Debug.Log("[GeminiService] Added missing marker to response");
-                }
-                
+                Debug.Log($"[GeminiService] Successfully parsed response: {result}");
                 return result;
             }
 
@@ -145,7 +117,6 @@ public class GeminiService
         }
     }
 
-    // Response classes remain the same
     private class GeminiResponse
     {
         public Candidate[] candidates { get; set; }
